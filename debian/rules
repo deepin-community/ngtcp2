@@ -1,4 +1,23 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@
+	dh ${@}
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		--with-gnutls
+
+execute_after_dh_prep:
+	chrpath -d examples/gtlsserver
+	chrpath -d examples/gtlsclient
+
+execute_before_dh_install:
+	mkdir -p debian/tmp/usr/sbin debian/tmp/usr/bin debian/tmp/usr/share/ngtcp2d/html
+	mv examples/gtlsserver debian/tmp/usr/sbin
+	mv examples/gtlsclient debian/tmp/usr/bin
+
+execute_after_dh_install:
+	rm -f debian/tmp/usr/lib/*/*.la
+
+override_dh_installsystemd:
+	dh_installsystemd --no-restart-after-upgrade --no-stop-on-upgrade --no-start --name ngtcp2d
