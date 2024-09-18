@@ -1,0 +1,4 @@
+usr/include/*/*crypto*
+usr/lib/*/*crypto*.a
+usr/lib/*/*crypto*.so
+usr/lib/*/pkgconfig/*crypto*

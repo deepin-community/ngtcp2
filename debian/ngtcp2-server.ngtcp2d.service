@@ -1,0 +1,17 @@
+[Unit]
+Description=ngtcp2 daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/gtlsserver localhost 7777 /etc/ssl/private/ssl-cert-snakeoil.key /etc/ssl/certs/ssl-cert-snakeoil.pem
+WorkingDirectory=/usr/share/ngtcp2d/html
+ExecReload=/bin/kill --signal HUP $MAINPID
+KillSignal=SIGQUIT
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=full
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
