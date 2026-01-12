@@ -54,19 +54,19 @@ TLSClientSession::~TLSClientSession() {
 
 namespace {
 auto negotiated_protocols_h3 = std::to_array<ptls_iovec_t>({
-    {
-        .base = const_cast<uint8_t *>(&H3_ALPN_V1[1]),
-        .len = H3_ALPN_V1[0],
-    },
+  {
+    .base = const_cast<uint8_t *>(&H3_ALPN_V1[1]),
+    .len = H3_ALPN_V1[0],
+  },
 });
 } // namespace
 
 namespace {
 auto negotiated_protocols_hq = std::to_array<ptls_iovec_t>({
-    {
-        .base = const_cast<uint8_t *>(&HQ_ALPN_V1[1]),
-        .len = HQ_ALPN_V1[0],
-    },
+  {
+    .base = const_cast<uint8_t *>(&HQ_ALPN_V1[1]),
+    .len = HQ_ALPN_V1[0],
+  },
 });
 } // namespace
 
@@ -85,12 +85,12 @@ int TLSClientSession::init(bool &early_data_enabled, TLSClientContext &tls_ctx,
   auto &hsprops = cptls_.handshake_properties;
 
   hsprops.additional_extensions = new ptls_raw_extension_t[2]{
-      {
-          .type = UINT16_MAX,
-      },
-      {
-          .type = UINT16_MAX,
-      },
+    {
+      .type = UINT16_MAX,
+    },
+    {
+      .type = UINT16_MAX,
+    },
   };
 
   if (ngtcp2_crypto_picotls_configure_client_session(&cptls_, conn) != 0) {
@@ -140,9 +140,11 @@ int TLSClientSession::init(bool &early_data_enabled, TLSClientContext &tls_ctx,
           std::cerr << "TLS session file contains unexpected name: " << name
                     << std::endl;
         } else {
-          hsprops.client.session_ticket.base = new uint8_t[datalen];
-          hsprops.client.session_ticket.len = datalen;
-          memcpy(hsprops.client.session_ticket.base, data, datalen);
+          hsprops.client.session_ticket.base =
+            new uint8_t[static_cast<size_t>(datalen)];
+          hsprops.client.session_ticket.len = static_cast<size_t>(datalen);
+          std::ranges::copy_n(data, datalen,
+                              hsprops.client.session_ticket.base);
 
           if (!config.disable_early_data) {
             // No easy way to check max_early_data from ticket.  We

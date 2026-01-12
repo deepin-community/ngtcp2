@@ -1,4 +1,4 @@
-usr/include/*/*crypto*
-usr/lib/*/*crypto*.a
-usr/lib/*/*crypto*.so
-usr/lib/*/pkgconfig/*crypto*
+usr/include/*/*crypto_gnutls*
+usr/lib/*/*crypto_gnutls.a
+usr/lib/*/*crypto_gnutls.so
+usr/lib/*/pkgconfig/*crypto_gnutls*

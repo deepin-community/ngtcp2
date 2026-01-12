@@ -40,7 +40,7 @@ extern Config config;
 namespace {
 int save_ticket_cb(ptls_save_ticket_t *self, ptls_t *ptls, ptls_iovec_t input) {
   auto conn_ref =
-      static_cast<ngtcp2_crypto_conn_ref *>(*ptls_get_data_ptr(ptls));
+    static_cast<ngtcp2_crypto_conn_ref *>(*ptls_get_data_ptr(ptls));
   auto c = static_cast<ClientBase *>(conn_ref->user_data);
 
   c->ticket_received();
@@ -53,7 +53,7 @@ int save_ticket_cb(ptls_save_ticket_t *self, ptls_t *ptls, ptls_iovec_t input) {
   }
 
   if (!PEM_write_bio(f, "PICOTLS SESSION PARAMETERS", "", input.base,
-                     input.len)) {
+                     static_cast<long>(input.len))) {
     std::cerr << "Unable to write TLS session to file" << std::endl;
   }
 
@@ -67,20 +67,27 @@ ptls_save_ticket_t save_ticket = {save_ticket_cb};
 
 namespace {
 ptls_key_exchange_algorithm_t *key_exchanges[] = {
-    &ptls_openssl_x25519,
-    &ptls_openssl_secp256r1,
-    &ptls_openssl_secp384r1,
-    &ptls_openssl_secp521r1,
-    nullptr,
+#if PTLS_OPENSSL_HAVE_X25519
+  &ptls_openssl_x25519,
+#endif // PTLS_OPENSSL_X25519
+  &ptls_openssl_secp256r1,
+  &ptls_openssl_secp384r1,
+  &ptls_openssl_secp521r1,
+#if PTLS_OPENSSL_HAVE_X25519MLKEM768
+  &ptls_openssl_x25519mlkem768,
+#endif // PTLS_OPENSSL_HAVE_X25519MLKEM768
+  nullptr,
 };
 } // namespace
 
 namespace {
 ptls_cipher_suite_t *cipher_suites[] = {
-    &ptls_openssl_aes128gcmsha256,
-    &ptls_openssl_aes256gcmsha384,
-    &ptls_openssl_chacha20poly1305sha256,
-    nullptr,
+  &ptls_openssl_aes128gcmsha256,
+  &ptls_openssl_aes256gcmsha384,
+#if PTLS_OPENSSL_HAVE_CHACHA20_POLY1305
+  &ptls_openssl_chacha20poly1305sha256,
+#endif // PTLS_OPENSSL_CHACHA20POLY1305SHA256
+  nullptr,
 };
 } // namespace
 

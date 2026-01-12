@@ -128,6 +128,9 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+liburlparse_la_LIBADD =
+am_liburlparse_la_OBJECTS = urlparse/liburlparse_la-urlparse.lo
+liburlparse_la_OBJECTS = $(am_liburlparse_la_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -143,7 +146,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = http-parser/$(DEPDIR)/http_parser.Plo
+am__depfiles_remade = http-parser/$(DEPDIR)/http_parser.Plo \
+	urlparse/$(DEPDIR)/liburlparse_la-urlparse.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -163,8 +167,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libhttp_parser_la_SOURCES)
-DIST_SOURCES = $(libhttp_parser_la_SOURCES)
+SOURCES = $(libhttp_parser_la_SOURCES) $(liburlparse_la_SOURCES)
+DIST_SOURCES = $(libhttp_parser_la_SOURCES) $(liburlparse_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -207,6 +211,12 @@ CPPFLAGS = @CPPFLAGS@
 CRYPTO_GNUTLS_LT_AGE = @CRYPTO_GNUTLS_LT_AGE@
 CRYPTO_GNUTLS_LT_CURRENT = @CRYPTO_GNUTLS_LT_CURRENT@
 CRYPTO_GNUTLS_LT_REVISION = @CRYPTO_GNUTLS_LT_REVISION@
+CRYPTO_LIBRESSL_LT_AGE = @CRYPTO_LIBRESSL_LT_AGE@
+CRYPTO_LIBRESSL_LT_CURRENT = @CRYPTO_LIBRESSL_LT_CURRENT@
+CRYPTO_LIBRESSL_LT_REVISION = @CRYPTO_LIBRESSL_LT_REVISION@
+CRYPTO_OSSL_LT_AGE = @CRYPTO_OSSL_LT_AGE@
+CRYPTO_OSSL_LT_CURRENT = @CRYPTO_OSSL_LT_CURRENT@
+CRYPTO_OSSL_LT_REVISION = @CRYPTO_OSSL_LT_REVISION@
 CRYPTO_QUICTLS_LT_AGE = @CRYPTO_QUICTLS_LT_AGE@
 CRYPTO_QUICTLS_LT_CURRENT = @CRYPTO_QUICTLS_LT_CURRENT@
 CRYPTO_QUICTLS_LT_REVISION = @CRYPTO_QUICTLS_LT_REVISION@
@@ -234,6 +244,8 @@ ETAGS = @ETAGS@
 EXAMPLES_BORINGSSL = @EXAMPLES_BORINGSSL@
 EXAMPLES_ENABLED = @EXAMPLES_ENABLED@
 EXAMPLES_GNUTLS = @EXAMPLES_GNUTLS@
+EXAMPLES_LIBRESSL = @EXAMPLES_LIBRESSL@
+EXAMPLES_OSSL = @EXAMPLES_OSSL@
 EXAMPLES_PICOTLS = @EXAMPLES_PICOTLS@
 EXAMPLES_QUICTLS = @EXAMPLES_QUICTLS@
 EXAMPLES_WOLFSSL = @EXAMPLES_WOLFSSL@
@@ -241,6 +253,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -378,11 +391,16 @@ top_srcdir = @top_srcdir@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 EXTRA_DIST = CMakeLists.txt
 AM_CPPFLAGS = @DEFS@
-noinst_LTLIBRARIES = libhttp-parser.la
+noinst_LTLIBRARIES = libhttp-parser.la liburlparse.la
 libhttp_parser_la_SOURCES = \
 	http-parser/http_parser.c \
 	http-parser/http_parser.h
 
+liburlparse_la_SOURCES = \
+	urlparse/urlparse.c \
+	urlparse/urlparse.h
+
+liburlparse_la_CPPFLAGS = -I${srcdir}/urlparse
 all: all-am
 
 .SUFFIXES:
@@ -438,16 +456,30 @@ http-parser/http_parser.lo: http-parser/$(am__dirstamp) \
 
 libhttp-parser.la: $(libhttp_parser_la_OBJECTS) $(libhttp_parser_la_DEPENDENCIES) $(EXTRA_libhttp_parser_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libhttp_parser_la_OBJECTS) $(libhttp_parser_la_LIBADD) $(LIBS)
+urlparse/$(am__dirstamp):
+	@$(MKDIR_P) urlparse
+	@: > urlparse/$(am__dirstamp)
+urlparse/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) urlparse/$(DEPDIR)
+	@: > urlparse/$(DEPDIR)/$(am__dirstamp)
+urlparse/liburlparse_la-urlparse.lo: urlparse/$(am__dirstamp) \
+	urlparse/$(DEPDIR)/$(am__dirstamp)
+
+liburlparse.la: $(liburlparse_la_OBJECTS) $(liburlparse_la_DEPENDENCIES) $(EXTRA_liburlparse_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(liburlparse_la_OBJECTS) $(liburlparse_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f http-parser/*.$(OBJEXT)
 	-rm -f http-parser/*.lo
+	-rm -f urlparse/*.$(OBJEXT)
+	-rm -f urlparse/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@http-parser/$(DEPDIR)/http_parser.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@urlparse/$(DEPDIR)/liburlparse_la-urlparse.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -479,12 +511,20 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
+urlparse/liburlparse_la-urlparse.lo: urlparse/urlparse.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(liburlparse_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT urlparse/liburlparse_la-urlparse.lo -MD -MP -MF urlparse/$(DEPDIR)/liburlparse_la-urlparse.Tpo -c -o urlparse/liburlparse_la-urlparse.lo `test -f 'urlparse/urlparse.c' || echo '$(srcdir)/'`urlparse/urlparse.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) urlparse/$(DEPDIR)/liburlparse_la-urlparse.Tpo urlparse/$(DEPDIR)/liburlparse_la-urlparse.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='urlparse/urlparse.c' object='urlparse/liburlparse_la-urlparse.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(liburlparse_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o urlparse/liburlparse_la-urlparse.lo `test -f 'urlparse/urlparse.c' || echo '$(srcdir)/'`urlparse/urlparse.c
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf http-parser/.libs http-parser/_libs
+	-rm -rf urlparse/.libs urlparse/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -602,6 +642,8 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f http-parser/$(DEPDIR)/$(am__dirstamp)
 	-rm -f http-parser/$(am__dirstamp)
+	-rm -f urlparse/$(DEPDIR)/$(am__dirstamp)
+	-rm -f urlparse/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -613,6 +655,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f http-parser/$(DEPDIR)/http_parser.Plo
+	-rm -f urlparse/$(DEPDIR)/liburlparse_la-urlparse.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -659,6 +702,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f http-parser/$(DEPDIR)/http_parser.Plo
+	-rm -f urlparse/$(DEPDIR)/liburlparse_la-urlparse.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

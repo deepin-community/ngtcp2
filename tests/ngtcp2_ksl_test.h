@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif /* HAVE_CONFIG_H */
+#endif /* defined(HAVE_CONFIG_H) */
 
 #define MUNIT_ENABLE_ASSERT_ALIASES
 
@@ -35,11 +35,11 @@
 
 extern const MunitSuite ksl_suite;
 
-munit_void_test_decl(test_ngtcp2_ksl_insert);
-munit_void_test_decl(test_ngtcp2_ksl_clear);
-munit_void_test_decl(test_ngtcp2_ksl_range);
-munit_void_test_decl(test_ngtcp2_ksl_update_key_range);
-munit_void_test_decl(test_ngtcp2_ksl_dup);
-munit_void_test_decl(test_ngtcp2_ksl_remove_hint);
+munit_void_test_decl(test_ngtcp2_ksl_insert)
+munit_void_test_decl(test_ngtcp2_ksl_clear)
+munit_void_test_decl(test_ngtcp2_ksl_range)
+munit_void_test_decl(test_ngtcp2_ksl_update_key_range)
+munit_void_test_decl(test_ngtcp2_ksl_dup)
+munit_void_test_decl(test_ngtcp2_ksl_remove_hint)
 
-#endif /* NGTCP2_KSL_TEST_H */
+#endif /* !defined(NGTCP2_KSL_TEST_H) */

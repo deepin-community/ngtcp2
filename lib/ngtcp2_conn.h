@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif /* HAVE_CONFIG_H */
+#endif /* defined(HAVE_CONFIG_H) */
 
 #include <ngtcp2/ngtcp2.h>
 
@@ -51,6 +51,9 @@
 #include "ngtcp2_qlog.h"
 #include "ngtcp2_rst.h"
 #include "ngtcp2_conn_stat.h"
+#include "ngtcp2_dcidtr.h"
+#include "ngtcp2_pcg.h"
+#include "ngtcp2_ratelim.h"
 
 typedef enum {
   /* Client specific handshake states */
@@ -74,31 +77,6 @@ typedef enum {
    unreceived data. */
 #define NGTCP2_MAX_REORDERED_CRYPTO_DATA 65536
 
-/* NGTCP2_MAX_RX_INITIAL_CRYPTO_DATA is the maximum offset of received
-   crypto stream in Initial packet.  We set this hard limit here
-   because crypto stream is unbounded. */
-#define NGTCP2_MAX_RX_INITIAL_CRYPTO_DATA 65536
-/* NGTCP2_MAX_RX_HANDSHAKE_CRYPTO_DATA is the maximum offset of
-   received crypto stream in Handshake packet.  We set this hard limit
-   here because crypto stream is unbounded. */
-#define NGTCP2_MAX_RX_HANDSHAKE_CRYPTO_DATA 65536
-
-/* NGTCP2_MAX_RETRIES is the number of Retry packet which client can
-   accept. */
-#define NGTCP2_MAX_RETRIES 3
-
-/* NGTCP2_MAX_BOUND_DCID_POOL_SIZE is the maximum number of
-   destination connection ID which have been bound to a particular
-   path, but not yet used as primary path and path validation is not
-   performed from the local endpoint. */
-#define NGTCP2_MAX_BOUND_DCID_POOL_SIZE 4
-/* NGTCP2_MAX_DCID_POOL_SIZE is the maximum number of destination
-   connection ID the remote endpoint provides to store.  It must be
-   the power of 2. */
-#define NGTCP2_MAX_DCID_POOL_SIZE 8
-/* NGTCP2_MAX_DCID_RETIRED_SIZE is the maximum number of retired DCID
-   kept to catch in-flight packet on retired path. */
-#define NGTCP2_MAX_DCID_RETIRED_SIZE 2
 /* NGTCP2_MAX_SCID_POOL_SIZE is the maximum number of source
    connection ID the local endpoint provides to the remote endpoint.
    The chosen value was described in old draft.  Now a remote endpoint
@@ -130,6 +108,9 @@ typedef enum {
    NGTCP2_WRITE_PKT_FLAG_REQUIRE_PADDING, but it requests to add
    padding to the full UDP datagram payload size. */
 #define NGTCP2_WRITE_PKT_FLAG_REQUIRE_PADDING_FULL 0x04u
+/* NGTCP2_WRITE_PKT_FLAG_PADDING_IF_NOT_EMPTY adds padding to the QUIC
+   packet as much as possible if the packet is not empty. */
+#define NGTCP2_WRITE_PKT_FLAG_PADDING_IF_NOT_EMPTY 0x08u
 
 /*
  * ngtcp2_max_frame is defined so that it covers the largest ACK
@@ -217,12 +198,27 @@ void ngtcp2_path_challenge_entry_init(ngtcp2_path_challenge_entry *pcent,
 /* NGTCP2_CONN_FLAG_KEY_UPDATE_INITIATOR is set when the local
    endpoint has initiated key update. */
 #define NGTCP2_CONN_FLAG_KEY_UPDATE_INITIATOR 0x10000u
+/* NGTCP2_CONN_FLAG_AGGREGATE_PKTS is set when
+   ngtcp2_conn_writev_stream is called inside the callback invoked by
+   ngtcp2_conn_write_aggregate_pkt. */
+#define NGTCP2_CONN_FLAG_AGGREGATE_PKTS 0x20000u
+/* NGTCP2_CONN_FLAG_CRUMBLE_INITIAL_CRYPTO, if set, crumbles an
+   Initial CRYPTO frame into pieces as a countermeasure against Deep
+   Packet Inspection. */
+#define NGTCP2_CONN_FLAG_CRUMBLE_INITIAL_CRYPTO 0x40000u
 
 typedef struct ngtcp2_pktns {
   struct {
     /* last_pkt_num is the packet number which the local endpoint sent
        last time.*/
     int64_t last_pkt_num;
+    struct {
+      /* next_pkt_num is the next packet number to skip. */
+      int64_t next_pkt_num;
+      /* exponent makes gap of skipping packets spread
+         exponentially. */
+      int64_t exponent;
+    } skip_pkt;
     ngtcp2_frame_chain *frq;
     /* non_ack_pkt_start_ts is the timestamp since the local endpoint
        starts sending continuous non ACK-eliciting packets. */
@@ -248,11 +244,6 @@ typedef struct ngtcp2_pktns {
     /* pngap tracks received packet number in order to suppress
        duplicated packet number. */
     ngtcp2_gaptr pngap;
-    /* max_pkt_num is the largest packet number received so far. */
-    int64_t max_pkt_num;
-    /* max_pkt_ts is the timestamp when max_pkt_num packet is
-       received. */
-    ngtcp2_tstamp max_pkt_ts;
     /* max_ack_eliciting_pkt_num is the largest ack-eliciting packet
        number received so far. */
     int64_t max_ack_eliciting_pkt_num;
@@ -277,21 +268,6 @@ typedef struct ngtcp2_pktns {
      *   ngtcp2_pktns.
      */
     ngtcp2_pkt_chain *buffed_pkts;
-
-    struct {
-      /* ect0, ect1, and ce are the number of QUIC packets received
-         with those markings. */
-      size_t ect0;
-      size_t ect1;
-      size_t ce;
-      struct {
-        /* ect0, ect1, ce are the ECN counts received in the latest
-           ACK frame. */
-        uint64_t ect0;
-        uint64_t ect1;
-        uint64_t ce;
-      } ack;
-    } ecn;
   } rx;
 
   struct {
@@ -322,6 +298,7 @@ typedef struct ngtcp2_pktns {
 
   ngtcp2_acktr acktr;
   ngtcp2_rtb rtb;
+  ngtcp2_pktns_id id;
 } ngtcp2_pktns;
 
 typedef enum ngtcp2_ecn_state {
@@ -344,16 +321,12 @@ typedef struct ngtcp2_early_transport_params {
   uint64_t max_datagram_frame_size;
 } ngtcp2_early_transport_params;
 
-ngtcp2_static_ringbuf_def(dcid_bound, NGTCP2_MAX_BOUND_DCID_POOL_SIZE,
-                          sizeof(ngtcp2_dcid));
-ngtcp2_static_ringbuf_def(dcid_unused, NGTCP2_MAX_DCID_POOL_SIZE,
-                          sizeof(ngtcp2_dcid));
-ngtcp2_static_ringbuf_def(dcid_retired, NGTCP2_MAX_DCID_RETIRED_SIZE,
-                          sizeof(ngtcp2_dcid));
 ngtcp2_static_ringbuf_def(path_challenge, 4,
-                          sizeof(ngtcp2_path_challenge_entry));
+                          sizeof(ngtcp2_path_challenge_entry))
 
-ngtcp2_objalloc_decl(strm, ngtcp2_strm, oplent);
+ngtcp2_static_ringbuf_def(path_history, 4, sizeof(ngtcp2_path_history_entry))
+
+ngtcp2_objalloc_decl(strm, ngtcp2_strm, oplent)
 
 struct ngtcp2_conn {
   ngtcp2_objalloc frc_objalloc;
@@ -374,6 +347,8 @@ struct ngtcp2_conn {
      records it in order to verify retry_source_connection_id
      transport parameter.  Server does not use this field. */
   ngtcp2_cid retry_scid;
+  /* hs_local_addr is a local address used during handshake. */
+  ngtcp2_sockaddr_union hs_local_addr;
   ngtcp2_pktns *in_pktns;
   ngtcp2_pktns *hs_pktns;
   ngtcp2_pktns pktns;
@@ -381,31 +356,13 @@ struct ngtcp2_conn {
   struct {
     /* current is the current destination connection ID. */
     ngtcp2_dcid current;
-    /* bound is a set of destination connection IDs which are bound to
-       particular paths.  These paths are not validated yet. */
-    ngtcp2_static_ringbuf_dcid_bound bound;
-    /* unused is a set of unused CID received from peer. */
-    ngtcp2_static_ringbuf_dcid_unused unused;
-    /* retired is a set of CID retired by local endpoint.  Keep them
-       in 3*PTO to catch packets in flight along the old path. */
-    ngtcp2_static_ringbuf_dcid_retired retired;
+    ngtcp2_dcidtr dtr;
     /* seqgap tracks received sequence numbers in order to ignore
        retransmitted duplicated NEW_CONNECTION_ID frame. */
     ngtcp2_gaptr seqgap;
     /* retire_prior_to is the largest retire_prior_to received so
        far. */
     uint64_t retire_prior_to;
-    struct {
-      /* seqs contains sequence number of Connection ID whose
-         retirement is not acknowledged by the remote endpoint yet. */
-      uint64_t seqs[NGTCP2_MAX_DCID_POOL_SIZE * 2];
-      /* len is the number of sequence numbers that seq contains. */
-      size_t len;
-    } retire_unacked;
-    /* zerolen_seq is a pseudo sequence number of zero-length
-       Destination Connection ID in order to distinguish between
-       them. */
-    uint64_t zerolen_seq;
   } dcid;
 
   struct {
@@ -429,11 +386,6 @@ struct ngtcp2_conn {
   struct {
     /* strmq contains ngtcp2_strm which has frames to send. */
     ngtcp2_pq strmq;
-    /* ack is ACK frame.  The underlying buffer is reused. */
-    ngtcp2_frame *ack;
-    /* max_ack_ranges is the number of additional ngtcp2_ack_range
-       which ack can contain. */
-    size_t max_ack_ranges;
     /* offset is the offset the local endpoint has sent to the remote
        endpoint. */
     uint64_t offset;
@@ -466,6 +418,15 @@ struct ngtcp2_conn {
       /* next_ts is the time to send next packet.  It is UINT64_MAX if
          packet pacing is disabled or expired.*/
       ngtcp2_tstamp next_ts;
+      /* compensation is the amount of time that a local endpoint
+         waits too long for pacing.  This happens because there is an
+         overhead before start writing packets after pacing timer
+         expires.  If multiple QUIC connections are handled by a
+         single thread, which is typical use case for event loop based
+         servers, each processing of QUIC connection adds overhead,
+         for example, TLS handshake, and packet encryption/decryption,
+         etc. */
+      ngtcp2_duration compensation;
     } pacing;
   } tx;
 
@@ -486,6 +447,12 @@ struct ngtcp2_conn {
     ngtcp2_static_ringbuf_path_challenge path_challenge;
     /* ccerr is the received connection close error. */
     ngtcp2_ccerr ccerr;
+
+    struct {
+      /* pkt_num is the lowest incoming packet number of the packet
+         that server verified preferred address usage of client. */
+      int64_t pkt_num;
+    } preferred_addr;
   } rx;
 
   struct {
@@ -676,9 +643,21 @@ struct ngtcp2_conn {
     ngtcp2_cc_cubic cubic;
     ngtcp2_cc_bbr bbr;
   };
+  /* path_history remembers the paths that have been validated
+     successfully.  The path is added to this history when a local
+     endpoint migrates to the another path. */
+  ngtcp2_static_ringbuf_path_history path_history;
+  /* glitch_rlim is the rate limit of glitches that can be tolerated.
+     If more than those glitches are detected, a connection is
+     closed. */
+  ngtcp2_ratelim glitch_rlim;
   const ngtcp2_mem *mem;
   /* idle_ts is the time instant when idle timer started. */
   ngtcp2_tstamp idle_ts;
+  /* handshake_confirmed_ts is the time instant when handshake is
+     confirmed.  For server, it is confirmed when completed. */
+  ngtcp2_tstamp handshake_confirmed_ts;
+  ngtcp2_pcg32 pcg;
   void *user_data;
   uint32_t client_chosen_version;
   uint32_t negotiated_version;
@@ -731,21 +710,6 @@ typedef struct ngtcp2_vmsg {
     ngtcp2_vmsg_datagram datagram;
   };
 } ngtcp2_vmsg;
-
-/*
- * ngtcp2_conn_sched_ack stores packet number |pkt_num| and its
- * reception timestamp |ts| in order to send its ACK.
- *
- * It returns 0 if it succeeds, or one of the following negative error
- * codes:
- *
- * NGTCP2_ERR_NOMEM
- *     Out of memory
- * NGTCP2_ERR_PROTO
- *     Same packet number has already been added.
- */
-int ngtcp2_conn_sched_ack(ngtcp2_conn *conn, ngtcp2_acktr *acktr,
-                          int64_t pkt_num, int active_ack, ngtcp2_tstamp ts);
 
 /*
  * ngtcp2_conn_find_stream returns a stream whose stream ID is
@@ -864,7 +828,8 @@ ngtcp2_tstamp ngtcp2_conn_internal_expiry(ngtcp2_conn *conn);
 ngtcp2_ssize ngtcp2_conn_write_vmsg(ngtcp2_conn *conn, ngtcp2_path *path,
                                     int pkt_info_version, ngtcp2_pkt_info *pi,
                                     uint8_t *dest, size_t destlen,
-                                    ngtcp2_vmsg *vmsg, ngtcp2_tstamp ts);
+                                    uint8_t wflags, ngtcp2_vmsg *vmsg,
+                                    ngtcp2_tstamp ts);
 
 /*
  * ngtcp2_conn_write_single_frame_pkt writes a packet which contains
@@ -883,9 +848,9 @@ ngtcp2_ssize ngtcp2_conn_write_vmsg(ngtcp2_conn *conn, ngtcp2_path *path,
  *     User-defined callback function failed.
  */
 ngtcp2_ssize ngtcp2_conn_write_single_frame_pkt(
-    ngtcp2_conn *conn, ngtcp2_pkt_info *pi, uint8_t *dest, size_t destlen,
-    uint8_t type, uint8_t flags, const ngtcp2_cid *dcid, ngtcp2_frame *fr,
-    uint16_t rtb_entry_flags, const ngtcp2_path *path, ngtcp2_tstamp ts);
+  ngtcp2_conn *conn, ngtcp2_pkt_info *pi, uint8_t *dest, size_t destlen,
+  uint8_t type, uint8_t flags, const ngtcp2_cid *dcid, ngtcp2_frame *fr,
+  uint16_t rtb_entry_flags, const ngtcp2_path *path, ngtcp2_tstamp ts);
 
 /*
  * ngtcp2_conn_commit_local_transport_params commits the local
@@ -1031,9 +996,9 @@ ngtcp2_conn_server_negotiate_version(ngtcp2_conn *conn,
  *     User callback failed
  */
 ngtcp2_ssize ngtcp2_conn_write_connection_close_pkt(
-    ngtcp2_conn *conn, ngtcp2_path *path, ngtcp2_pkt_info *pi, uint8_t *dest,
-    size_t destlen, uint64_t error_code, const uint8_t *reason,
-    size_t reasonlen, ngtcp2_tstamp ts);
+  ngtcp2_conn *conn, ngtcp2_path *path, ngtcp2_pkt_info *pi, uint8_t *dest,
+  size_t destlen, uint64_t error_code, const uint8_t *reason, size_t reasonlen,
+  ngtcp2_tstamp ts);
 
 /**
  * @function
@@ -1077,9 +1042,9 @@ ngtcp2_ssize ngtcp2_conn_write_connection_close_pkt(
  *     User callback failed
  */
 ngtcp2_ssize ngtcp2_conn_write_application_close_pkt(
-    ngtcp2_conn *conn, ngtcp2_path *path, ngtcp2_pkt_info *pi, uint8_t *dest,
-    size_t destlen, uint64_t app_error_code, const uint8_t *reason,
-    size_t reasonlen, ngtcp2_tstamp ts);
+  ngtcp2_conn *conn, ngtcp2_path *path, ngtcp2_pkt_info *pi, uint8_t *dest,
+  size_t destlen, uint64_t app_error_code, const uint8_t *reason,
+  size_t reasonlen, ngtcp2_tstamp ts);
 
 int ngtcp2_conn_start_pmtud(ngtcp2_conn *conn);
 
@@ -1104,7 +1069,7 @@ void ngtcp2_conn_stop_pmtud(ngtcp2_conn *conn);
  *     Out of memory.
  */
 int ngtcp2_conn_set_remote_transport_params(
-    ngtcp2_conn *conn, const ngtcp2_transport_params *params);
+  ngtcp2_conn *conn, const ngtcp2_transport_params *params);
 
 /**
  * @function
@@ -1143,29 +1108,7 @@ int ngtcp2_conn_set_remote_transport_params(
  *     Out of memory.
  */
 int ngtcp2_conn_set_0rtt_remote_transport_params(
-    ngtcp2_conn *conn, const ngtcp2_transport_params *params);
-
-/*
- * ngtcp2_conn_create_ack_frame creates ACK frame, and assigns its
- * pointer to |*pfr| if there are any received packets to acknowledge.
- * If there are no packets to acknowledge, this function returns 0,
- * and |*pfr| is untouched.  The caller is advised to set |*pfr| to
- * NULL before calling this function, and check it after this function
- * returns.
- *
- * Call ngtcp2_acktr_commit_ack after a created ACK frame is
- * successfully serialized into a packet.
- *
- * This function returns 0 if it succeeds, or one of the following
- * negative error codes:
- *
- * NGTCP2_ERR_NOMEM
- *     Out of memory.
- */
-int ngtcp2_conn_create_ack_frame(ngtcp2_conn *conn, ngtcp2_frame **pfr,
-                                 ngtcp2_pktns *pktns, uint8_t type,
-                                 ngtcp2_tstamp ts, ngtcp2_duration ack_delay,
-                                 uint64_t ack_delay_exponent);
+  ngtcp2_conn *conn, const ngtcp2_transport_params *params);
 
 /*
  * ngtcp2_conn_discard_initial_state discards state for Initial packet
@@ -1179,4 +1122,11 @@ void ngtcp2_conn_discard_initial_state(ngtcp2_conn *conn, ngtcp2_tstamp ts);
  */
 void ngtcp2_conn_discard_handshake_state(ngtcp2_conn *conn, ngtcp2_tstamp ts);
 
-#endif /* NGTCP2_CONN_H */
+void ngtcp2_conn_add_path_history(ngtcp2_conn *conn, const ngtcp2_dcid *dcid,
+                                  ngtcp2_tstamp ts);
+
+const ngtcp2_path_history_entry *
+ngtcp2_conn_find_path_history(ngtcp2_conn *conn, const ngtcp2_path *path,
+                              ngtcp2_tstamp ts);
+
+#endif /* !defined(NGTCP2_CONN_H) */

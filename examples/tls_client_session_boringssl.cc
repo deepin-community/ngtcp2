@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <fstream>
 
 #include "tls_client_context_boringssl.h"
 #include "client_base.h"
@@ -58,10 +59,10 @@ int TLSClientSession::init(bool &early_data_enabled,
 
   switch (app_proto) {
   case AppProtocol::H3:
-    SSL_set_alpn_protos(ssl_, H3_ALPN, str_size(H3_ALPN));
+    SSL_set_alpn_protos(ssl_, H3_ALPN.data(), H3_ALPN.size());
     break;
   case AppProtocol::HQ:
-    SSL_set_alpn_protos(ssl_, HQ_ALPN, str_size(HQ_ALPN));
+    SSL_set_alpn_protos(ssl_, HQ_ALPN.data(), HQ_ALPN.size());
     break;
   }
 
@@ -99,9 +100,48 @@ int TLSClientSession::init(bool &early_data_enabled,
     }
   }
 
+  if (!config.ech_config_list.empty() &&
+      SSL_set1_ech_config_list(ssl_, config.ech_config_list.data(),
+                               config.ech_config_list.size()) != 1) {
+    std::cerr << "Could not set ECHConfigList: "
+              << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
+    return -1;
+  }
+
   return 0;
 }
 
 bool TLSClientSession::get_early_data_accepted() const {
   return SSL_early_data_accepted(ssl_);
+}
+
+bool TLSClientSession::get_ech_accepted() const {
+  return SSL_ech_accepted(ssl_);
+}
+
+int TLSClientSession::write_ech_config_list(const char *path) const {
+  const uint8_t *retry_configs;
+  size_t retry_configslen;
+
+  SSL_get0_ech_retry_configs(ssl_, &retry_configs, &retry_configslen);
+  if (retry_configslen == 0) {
+    std::cerr << "No ECH retry configs found" << std::endl;
+    return -1;
+  }
+
+  auto f = std::ofstream(path);
+
+  if (!f) {
+    return -1;
+  }
+
+  f.write(reinterpret_cast<const char *>(retry_configs),
+          static_cast<std::streamsize>(retry_configslen));
+  f.close();
+
+  if (!f) {
+    return -1;
+  }
+
+  return 0;
 }

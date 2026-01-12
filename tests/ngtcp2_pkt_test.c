@@ -34,47 +34,56 @@
 #include "ngtcp2_vec.h"
 
 static const MunitTest tests[] = {
-    munit_void_test(test_ngtcp2_pkt_decode_version_cid),
-    munit_void_test(test_ngtcp2_pkt_decode_hd_long),
-    munit_void_test(test_ngtcp2_pkt_decode_hd_short),
-    munit_void_test(test_ngtcp2_pkt_decode_frame),
-    munit_void_test(test_ngtcp2_pkt_decode_stream_frame),
-    munit_void_test(test_ngtcp2_pkt_decode_ack_frame),
-    munit_void_test(test_ngtcp2_pkt_decode_padding_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_stream_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_ack_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_ack_ecn_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_reset_stream_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_connection_close_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_connection_close_app_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_max_data_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_max_stream_data_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_max_streams_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_ping_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_data_blocked_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_stream_data_blocked_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_streams_blocked_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_new_connection_id_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_stop_sending_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_path_challenge_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_path_response_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_crypto_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_new_token_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_retire_connection_id_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_handshake_done_frame),
-    munit_void_test(test_ngtcp2_pkt_encode_datagram_frame),
-    munit_void_test(test_ngtcp2_pkt_adjust_pkt_num),
-    munit_void_test(test_ngtcp2_pkt_validate_ack),
-    munit_void_test(test_ngtcp2_pkt_write_stateless_reset),
-    munit_void_test(test_ngtcp2_pkt_write_retry),
-    munit_void_test(test_ngtcp2_pkt_write_version_negotiation),
-    munit_void_test(test_ngtcp2_pkt_stream_max_datalen),
-    munit_test_end(),
+  munit_void_test(test_ngtcp2_pkt_decode_version_cid),
+  munit_void_test(test_ngtcp2_pkt_decode_hd_long),
+  munit_void_test(test_ngtcp2_pkt_decode_hd_short),
+  munit_void_test(test_ngtcp2_pkt_decode_frame),
+  munit_void_test(test_ngtcp2_pkt_decode_stream_frame),
+  munit_void_test(test_ngtcp2_pkt_decode_ack_frame),
+  munit_void_test(test_ngtcp2_pkt_decode_padding_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_stream_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_ack_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_ack_ecn_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_reset_stream_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_connection_close_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_connection_close_app_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_max_data_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_max_stream_data_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_max_streams_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_ping_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_data_blocked_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_stream_data_blocked_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_streams_blocked_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_new_connection_id_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_stop_sending_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_path_challenge_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_path_response_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_crypto_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_new_token_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_retire_connection_id_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_handshake_done_frame),
+  munit_void_test(test_ngtcp2_pkt_encode_datagram_frame),
+  munit_void_test(test_ngtcp2_pkt_adjust_pkt_num),
+  munit_void_test(test_ngtcp2_pkt_validate_ack),
+  munit_void_test(test_ngtcp2_pkt_write_stateless_reset),
+  munit_void_test(test_ngtcp2_pkt_write_retry),
+  munit_void_test(test_ngtcp2_pkt_write_version_negotiation),
+  munit_void_test(test_ngtcp2_pkt_stream_max_datalen),
+  munit_void_test(test_ngtcp2_pkt_split_vec_rand),
+  munit_void_test(test_ngtcp2_pkt_split_vec_at),
+  munit_void_test(test_ngtcp2_pkt_find_server_name),
+  munit_void_test(test_ngtcp2_pkt_append_ping_and_padding),
+  munit_void_test(test_ngtcp2_pkt_permutate_vec),
+  munit_void_test(test_ngtcp2_pkt_remove_vec_partial),
+  munit_test_end(),
 };
 
 const MunitSuite pkt_suite = {
-    "/pkt", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE,
+  .prefix = "/pkt",
+  .tests = tests,
 };
+
+static uint8_t null_data[4096];
 
 static int null_retry_encrypt(uint8_t *dest, const ngtcp2_crypto_aead *aead,
                               const ngtcp2_crypto_aead_ctx *aead_ctx,
@@ -295,7 +304,8 @@ void test_ngtcp2_pkt_decode_hd_long(void) {
 
   /* Handshake */
   ngtcp2_pkt_hd_init(&hd, NGTCP2_PKT_FLAG_LONG_FORM, NGTCP2_PKT_HANDSHAKE,
-                     &dcid, &scid, 0xe1e2e3e4u, 4, NGTCP2_PROTO_VER_V1, 16383);
+                     &dcid, &scid, 0xe1e2e3e4u, 4, NGTCP2_PROTO_VER_V1);
+  hd.len = 16383;
 
   rv = ngtcp2_pkt_encode_hd_long(buf, sizeof(buf), &hd);
 
@@ -324,9 +334,9 @@ void test_ngtcp2_pkt_decode_hd_long(void) {
 
   /* Handshake without Fixed Bit set */
   ngtcp2_pkt_hd_init(
-      &hd, NGTCP2_PKT_FLAG_LONG_FORM | NGTCP2_PKT_FLAG_FIXED_BIT_CLEAR,
-      NGTCP2_PKT_HANDSHAKE, &dcid, &scid, 0xe1e2e3e4u, 4, NGTCP2_PROTO_VER_V1,
-      16383);
+    &hd, NGTCP2_PKT_FLAG_LONG_FORM | NGTCP2_PKT_FLAG_FIXED_BIT_CLEAR,
+    NGTCP2_PKT_HANDSHAKE, &dcid, &scid, 0xe1e2e3e4u, 4, NGTCP2_PROTO_VER_V1);
+  hd.len = 16383;
 
   rv = ngtcp2_pkt_encode_hd_long(buf, sizeof(buf), &hd);
 
@@ -356,7 +366,7 @@ void test_ngtcp2_pkt_decode_hd_long(void) {
   /* VN */
   /* Set random packet type */
   ngtcp2_pkt_hd_init(&hd, NGTCP2_PKT_FLAG_LONG_FORM, NGTCP2_PKT_HANDSHAKE,
-                     &dcid, &scid, 0, 4, NGTCP2_PROTO_VER_V1, 0);
+                     &dcid, &scid, 0, 4, NGTCP2_PROTO_VER_V1);
 
   rv = ngtcp2_pkt_encode_hd_long(buf, sizeof(buf), &hd);
   /* Set version field to 0 */
@@ -399,7 +409,7 @@ void test_ngtcp2_pkt_decode_hd_short(void) {
 
   /* 4 bytes packet number */
   ngtcp2_pkt_hd_init(&hd, NGTCP2_PKT_FLAG_NONE, NGTCP2_PKT_1RTT, &dcid, NULL,
-                     0xe1e2e3e4u, 4, 0xd1d2d3d4u, 0);
+                     0xe1e2e3e4u, 4, 0xd1d2d3d4u);
 
   expectedlen = 1 + dcid.datalen + 4;
 
@@ -428,9 +438,8 @@ void test_ngtcp2_pkt_decode_hd_short(void) {
   }
 
   /* 4 bytes packet number without Fixed Bit set */
-  ngtcp2_pkt_hd_init(
-      &hd, NGTCP2_PKT_FLAG_NONE | NGTCP2_PKT_FLAG_FIXED_BIT_CLEAR,
-      NGTCP2_PKT_1RTT, &dcid, NULL, 0xe1e2e3e4u, 4, 0xd1d2d3d4u, 0);
+  ngtcp2_pkt_hd_init(&hd, NGTCP2_PKT_FLAG_FIXED_BIT_CLEAR, NGTCP2_PKT_1RTT,
+                     &dcid, NULL, 0xe1e2e3e4u, 4, 0xd1d2d3d4u);
 
   expectedlen = 1 + dcid.datalen + 4;
 
@@ -460,7 +469,7 @@ void test_ngtcp2_pkt_decode_hd_short(void) {
 
   /* 2 bytes packet number */
   ngtcp2_pkt_hd_init(&hd, NGTCP2_PKT_FLAG_NONE, NGTCP2_PKT_1RTT, &dcid, NULL,
-                     0xe1e2e3e4u, 2, 0xd1d2d3d4u, 0);
+                     0xe1e2e3e4u, 2, 0xd1d2d3d4u);
 
   expectedlen = 1 + dcid.datalen + 2;
 
@@ -489,7 +498,7 @@ void test_ngtcp2_pkt_decode_hd_short(void) {
 
   /* 1 byte packet number */
   ngtcp2_pkt_hd_init(&hd, NGTCP2_PKT_FLAG_NONE, NGTCP2_PKT_1RTT, &dcid, NULL,
-                     0xe1e2e3e4u, 1, 0xd1d2d3d4u, 0);
+                     0xe1e2e3e4u, 1, 0xd1d2d3d4u);
 
   expectedlen = 1 + dcid.datalen + 1;
 
@@ -518,7 +527,7 @@ void test_ngtcp2_pkt_decode_hd_short(void) {
 
   /* With Key Phase */
   ngtcp2_pkt_hd_init(&hd, NGTCP2_PKT_FLAG_KEY_PHASE, NGTCP2_PKT_1RTT, &dcid,
-                     NULL, 0xe1e2e3e4u, 4, 0xd1d2d3d4u, 0);
+                     NULL, 0xe1e2e3e4u, 4, 0xd1d2d3d4u);
 
   expectedlen = 1 + dcid.datalen + 4;
 
@@ -549,7 +558,7 @@ void test_ngtcp2_pkt_decode_hd_short(void) {
 
   /* With empty DCID */
   ngtcp2_pkt_hd_init(&hd, NGTCP2_PKT_FLAG_NONE, NGTCP2_PKT_1RTT, NULL, NULL,
-                     0xe1e2e3e4u, 4, 0xd1d2d3d4u, 0);
+                     0xe1e2e3e4u, 4, 0xd1d2d3d4u);
 
   expectedlen = 1 + 4;
 
@@ -579,10 +588,10 @@ void test_ngtcp2_pkt_decode_hd_short(void) {
 
 void test_ngtcp2_pkt_decode_frame(void) {
   const uint8_t malformed_stream_frame[] = {
-      0xff, 0x01, 0x01, 0x01, 0x01,
+    0xff, 0x01, 0x01, 0x01, 0x01,
   };
   const uint8_t good_stream_frame[] = {
-      0x0f, 0x01, 0x01, 0x01, 0x01,
+    0x0f, 0x01, 0x01, 0x01, 0x01,
   };
   ngtcp2_ssize rv;
   ngtcp2_frame fr;
@@ -592,8 +601,8 @@ void test_ngtcp2_pkt_decode_frame(void) {
 
   assert_ptrdiff(NGTCP2_ERR_FRAME_ENCODING, ==, rv);
 
-  rv = ngtcp2_pkt_decode_frame(&fr, good_stream_frame,
-                               sizeof(good_stream_frame));
+  rv =
+    ngtcp2_pkt_decode_frame(&fr, good_stream_frame, sizeof(good_stream_frame));
 
   assert_ptrdiff(5, ==, rv);
   assert_uint64(NGTCP2_FRAME_STREAM, ==, fr.type);
@@ -640,8 +649,8 @@ void test_ngtcp2_pkt_decode_stream_frame(void) {
   memset(&fr, 0, sizeof(fr));
 
   /* 6 bits Stream ID + no Offset + Data Length */
-  buflen = ngtcp2_t_encode_stream_frame(buf, NGTCP2_STREAM_LEN_BIT, 0x31, 0x00,
-                                        0x14);
+  buflen =
+    ngtcp2_t_encode_stream_frame(buf, NGTCP2_STREAM_LEN_BIT, 0x31, 0x00, 0x14);
 
   expectedlen = 1 + 1 + 0 + 1 + 20;
 
@@ -692,9 +701,9 @@ void test_ngtcp2_pkt_decode_ack_frame(void) {
   size_t expectedlen;
 
   /* 62 bits Largest Acknowledged */
-  buflen = ngtcp2_t_encode_ack_frame(buf, 0x31f2f3f4f5f6f7f8llu,
-                                     0x31e2e3e4e5e6e7e8llu, 99,
-                                     0x31d2d3d4d5d6d7d8llu);
+  buflen =
+    ngtcp2_t_encode_ack_frame(buf, 0x31f2f3f4f5f6f7f8llu, 0x31e2e3e4e5e6e7e8llu,
+                              99, 0x31d2d3d4d5d6d7d8llu);
 
   expectedlen = 1 + 8 + 1 + 1 + 8 + 2 + 8;
 
@@ -734,13 +743,17 @@ void test_ngtcp2_pkt_encode_stream_frame(void) {
   size_t i;
 
   /* 32 bits Stream ID + 62 bits Offset + Data Length */
-  fr.type = NGTCP2_FRAME_STREAM;
-  fr.fin = 0;
-  fr.stream_id = 0xf1f2f3f4u;
-  fr.offset = 0x31f2f3f4f5f6f7f8llu;
-  fr.datacnt = 1;
-  fr.data[0].len = strsize(data);
-  fr.data[0].base = (uint8_t *)data;
+  fr = (ngtcp2_stream){
+    .type = NGTCP2_FRAME_STREAM,
+    .stream_id = 0xf1f2f3f4u,
+    .offset = 0x31f2f3f4f5f6f7f8llu,
+    .datacnt = 1,
+    .data[0] =
+      {
+        .len = strsize(data),
+        .base = (uint8_t *)data,
+      },
+  };
 
   framelen = 1 + 8 + 8 + 1 + 17;
 
@@ -770,13 +783,16 @@ void test_ngtcp2_pkt_encode_stream_frame(void) {
   memset(&nfr, 0, sizeof(nfr));
 
   /* 6 bits Stream ID + No Offset + Data Length */
-  fr.type = NGTCP2_FRAME_STREAM;
-  fr.fin = 0;
-  fr.stream_id = 0x31;
-  fr.offset = 0;
-  fr.datacnt = 1;
-  fr.data[0].len = strsize(data);
-  fr.data[0].base = (uint8_t *)data;
+  fr = (ngtcp2_stream){
+    .type = NGTCP2_FRAME_STREAM,
+    .stream_id = 0x31,
+    .datacnt = 1,
+    .data[0] =
+      {
+        .len = strsize(data),
+        .base = (uint8_t *)data,
+      },
+  };
 
   framelen = 1 + 1 + 1 + 17;
 
@@ -806,13 +822,18 @@ void test_ngtcp2_pkt_encode_stream_frame(void) {
   memset(&nfr, 0, sizeof(nfr));
 
   /* Fin + 32 bits Stream ID + 62 bits Offset + Data Length */
-  fr.type = NGTCP2_FRAME_STREAM;
-  fr.fin = 1;
-  fr.stream_id = 0xf1f2f3f4u;
-  fr.offset = 0x31f2f3f4f5f6f7f8llu;
-  fr.datacnt = 1;
-  fr.data[0].len = strsize(data);
-  fr.data[0].base = (uint8_t *)data;
+  fr = (ngtcp2_stream){
+    .type = NGTCP2_FRAME_STREAM,
+    .fin = 1,
+    .stream_id = 0xf1f2f3f4u,
+    .offset = 0x31f2f3f4f5f6f7f8llu,
+    .datacnt = 1,
+    .data[0] =
+      {
+        .len = strsize(data),
+        .base = (uint8_t *)data,
+      },
+  };
 
   framelen = 1 + 8 + 8 + 1 + 17;
 
@@ -825,8 +846,8 @@ void test_ngtcp2_pkt_encode_stream_frame(void) {
   assert_ptrdiff((ngtcp2_ssize)framelen, ==, rv);
   assert_uint64(fr.type, ==, nfr.type);
   assert_uint8(
-      (NGTCP2_STREAM_FIN_BIT | NGTCP2_STREAM_OFF_BIT | NGTCP2_STREAM_LEN_BIT),
-      ==, nfr.flags);
+    (NGTCP2_STREAM_FIN_BIT | NGTCP2_STREAM_OFF_BIT | NGTCP2_STREAM_LEN_BIT), ==,
+    nfr.flags);
   assert_uint8(fr.fin, ==, nfr.fin);
   assert_int64(fr.stream_id, ==, nfr.stream_id);
   assert_uint64(fr.offset, ==, nfr.offset);
@@ -844,13 +865,18 @@ void test_ngtcp2_pkt_encode_stream_frame(void) {
   memset(&nfr, 0, sizeof(nfr));
 
   /* NOBUF: Fin + 32 bits Stream ID + 62 bits Offset + Data Length */
-  fr.type = NGTCP2_FRAME_STREAM;
-  fr.fin = 1;
-  fr.stream_id = 0xf1f2f3f4u;
-  fr.offset = 0x31f2f3f4f5f6f7f8llu;
-  fr.datacnt = 1;
-  fr.data[0].len = strsize(data);
-  fr.data[0].base = (uint8_t *)data;
+  fr = (ngtcp2_stream){
+    .type = NGTCP2_FRAME_STREAM,
+    .fin = 1,
+    .stream_id = 0xf1f2f3f4u,
+    .offset = 0x31f2f3f4f5f6f7f8llu,
+    .datacnt = 1,
+    .data[0] =
+      {
+        .len = strsize(data),
+        .base = (uint8_t *)data,
+      },
+  };
 
   framelen = 1 + 8 + 8 + 1 + 17;
 
@@ -869,11 +895,10 @@ void test_ngtcp2_pkt_encode_ack_frame(void) {
   ngtcp2_ack_range *ranges;
 
   /* 0 Num Blocks */
-  fr->type = NGTCP2_FRAME_ACK;
-  fr->largest_ack = 0xf1f2f3f4llu;
-  fr->first_ack_range = 0;
-  fr->ack_delay = 0;
-  fr->rangecnt = 0;
+  *fr = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK,
+    .largest_ack = 0xf1f2f3f4llu,
+  };
 
   framelen = 1 + 8 + 1 + 1 + 1;
 
@@ -899,16 +924,22 @@ void test_ngtcp2_pkt_encode_ack_frame(void) {
   memset(&nmfr, 0, sizeof(nmfr));
 
   /* 2 Num Blocks */
-  fr->type = NGTCP2_FRAME_ACK;
-  fr->largest_ack = 0xf1f2f3f4llu;
-  fr->first_ack_range = 0xe1e2e3e4llu;
-  fr->ack_delay = 0xf1f2;
-  fr->rangecnt = 2;
+  *fr = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK,
+    .largest_ack = 0xf1f2f3f4llu,
+    .first_ack_range = 0xe1e2e3e4llu,
+    .ack_delay = 0xf1f2,
+    .rangecnt = 2,
+  };
   ranges = fr->ranges;
-  ranges[0].gap = 255;
-  ranges[0].len = 0xd1d2d3d4llu;
-  ranges[1].gap = 1;
-  ranges[1].len = 0xd1d2d3d4llu;
+  ranges[0] = (ngtcp2_ack_range){
+    .gap = 255,
+    .len = 0xd1d2d3d4llu,
+  };
+  ranges[1] = (ngtcp2_ack_range){
+    .gap = 1,
+    .len = 0xd1d2d3d4llu,
+  };
 
   framelen = 1 + 8 + 4 + 1 + 8 + (2 + 8) + (1 + 8);
 
@@ -949,14 +980,16 @@ void test_ngtcp2_pkt_encode_ack_ecn_frame(void) {
   ngtcp2_ack_range *ranges;
 
   /* 0 Num Blocks */
-  fr->type = NGTCP2_FRAME_ACK_ECN;
-  fr->largest_ack = 0xf1f2f3f4llu;
-  fr->first_ack_range = 0;
-  fr->ack_delay = 0;
-  fr->rangecnt = 0;
-  fr->ecn.ect0 = 64;
-  fr->ecn.ect1 = 16384;
-  fr->ecn.ce = 1073741824;
+  *fr = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK_ECN,
+    .largest_ack = 0xf1f2f3f4llu,
+    .ecn =
+      {
+        .ect0 = 64,
+        .ect1 = 16384,
+        .ce = 1073741824,
+      },
+  };
 
   framelen = 1 + 8 + 1 + 1 + 1 + 2 + 4 + 8;
 
@@ -985,19 +1018,27 @@ void test_ngtcp2_pkt_encode_ack_ecn_frame(void) {
   memset(&nmfr, 0, sizeof(nmfr));
 
   /* 2 Num Blocks */
-  fr->type = NGTCP2_FRAME_ACK_ECN;
-  fr->largest_ack = 0xf1f2f3f4llu;
-  fr->first_ack_range = 0xe1e2e3e4llu;
-  fr->ack_delay = 0xf1f2;
-  fr->rangecnt = 2;
+  *fr = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK_ECN,
+    .largest_ack = 0xf1f2f3f4llu,
+    .first_ack_range = 0xe1e2e3e4llu,
+    .ack_delay = 0xf1f2,
+    .rangecnt = 2,
+    .ecn =
+      {
+        .ect1 = 64,
+        .ce = 16384,
+      },
+  };
   ranges = fr->ranges;
-  ranges[0].gap = 255;
-  ranges[0].len = 0xd1d2d3d4llu;
-  ranges[1].gap = 1;
-  ranges[1].len = 0xd1d2d3d4llu;
-  fr->ecn.ect0 = 0;
-  fr->ecn.ect1 = 64;
-  fr->ecn.ce = 16384;
+  ranges[0] = (ngtcp2_ack_range){
+    .gap = 255,
+    .len = 0xd1d2d3d4llu,
+  };
+  ranges[1] = (ngtcp2_ack_range){
+    .gap = 1,
+    .len = 0xd1d2d3d4llu,
+  };
 
   framelen = 1 + 8 + 4 + 1 + 8 + (2 + 8) + (1 + 8) + 1 + 2 + 4;
 
@@ -1039,10 +1080,12 @@ void test_ngtcp2_pkt_encode_reset_stream_frame(void) {
   size_t framelen = 1 + 4 + 4 + 8;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_RESET_STREAM;
-  fr.stream_id = 1000000007;
-  fr.app_error_code = 0xe1e2;
-  fr.final_size = 0x31f2f3f4f5f6f7f8llu;
+  fr = (ngtcp2_reset_stream){
+    .type = NGTCP2_FRAME_RESET_STREAM,
+    .stream_id = 1000000007,
+    .app_error_code = 0xe1e2,
+    .final_size = 0x31f2f3f4f5f6f7f8llu,
+  };
 
   rv = ngtcp2_pkt_encode_reset_stream_frame(buf, sizeof(buf), &fr);
 
@@ -1075,11 +1118,11 @@ void test_ngtcp2_pkt_encode_connection_close_frame(void) {
   memset(reason, 0xfa, sizeof(reason));
 
   /* no Reason Phrase */
-  fr.type = NGTCP2_FRAME_CONNECTION_CLOSE;
-  fr.error_code = 0xf1f2u;
-  fr.frame_type = 255;
-  fr.reasonlen = 0;
-  fr.reason = NULL;
+  fr = (ngtcp2_connection_close){
+    .type = NGTCP2_FRAME_CONNECTION_CLOSE,
+    .error_code = 0xf1f2u,
+    .frame_type = 255,
+  };
 
   framelen = 1 + 4 + 2 + 1;
 
@@ -1105,11 +1148,12 @@ void test_ngtcp2_pkt_encode_connection_close_frame(void) {
   memset(&nfr, 0, sizeof(nfr));
 
   /* 1024 bytes Reason Phrase */
-  fr.type = NGTCP2_FRAME_CONNECTION_CLOSE;
-  fr.error_code = 0xf3f4u;
-  fr.frame_type = 0;
-  fr.reasonlen = sizeof(reason);
-  fr.reason = reason;
+  fr = (ngtcp2_connection_close){
+    .type = NGTCP2_FRAME_CONNECTION_CLOSE,
+    .error_code = 0xf3f4u,
+    .reasonlen = sizeof(reason),
+    .reason = reason,
+  };
 
   framelen = 1 + 4 + 1 + 2 + sizeof(reason);
 
@@ -1146,11 +1190,11 @@ void test_ngtcp2_pkt_encode_connection_close_app_frame(void) {
   memset(reason, 0xfa, sizeof(reason));
 
   /* no Reason Phrase */
-  fr.type = NGTCP2_FRAME_CONNECTION_CLOSE_APP;
-  fr.error_code = 0xf1f2u;
-  fr.frame_type = 0xff; /* This must be ignored. */
-  fr.reasonlen = 0;
-  fr.reason = NULL;
+  fr = (ngtcp2_connection_close){
+    .type = NGTCP2_FRAME_CONNECTION_CLOSE_APP,
+    .error_code = 0xf1f2u,
+    .frame_type = 0xff, /* This must be ignored. */
+  };
 
   framelen = 1 + 4 + 1;
 
@@ -1184,8 +1228,10 @@ void test_ngtcp2_pkt_encode_max_data_frame(void) {
   size_t framelen = 1 + 8;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_MAX_DATA;
-  fr.max_data = 0x31f2f3f4f5f6f7f8llu;
+  fr = (ngtcp2_max_data){
+    .type = NGTCP2_FRAME_MAX_DATA,
+    .max_data = 0x31f2f3f4f5f6f7f8llu,
+  };
 
   rv = ngtcp2_pkt_encode_max_data_frame(buf, sizeof(buf), &fr);
 
@@ -1212,9 +1258,11 @@ void test_ngtcp2_pkt_encode_max_stream_data_frame(void) {
   size_t framelen = 1 + 8 + 8;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_MAX_STREAM_DATA;
-  fr.stream_id = 0xf1f2f3f4u;
-  fr.max_stream_data = 0x35f6f7f8f9fafbfcllu;
+  fr = (ngtcp2_max_stream_data){
+    .type = NGTCP2_FRAME_MAX_STREAM_DATA,
+    .stream_id = 0xf1f2f3f4u,
+    .max_stream_data = 0x35f6f7f8f9fafbfcllu,
+  };
 
   rv = ngtcp2_pkt_encode_max_stream_data_frame(buf, sizeof(buf), &fr);
 
@@ -1242,8 +1290,10 @@ void test_ngtcp2_pkt_encode_max_streams_frame(void) {
   size_t framelen = 1 + 8;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_MAX_STREAMS_BIDI;
-  fr.max_streams = 0xf1f2f3f4u;
+  fr = (ngtcp2_max_streams){
+    .type = NGTCP2_FRAME_MAX_STREAMS_BIDI,
+    .max_streams = 0xf1f2f3f4u,
+  };
 
   rv = ngtcp2_pkt_encode_max_streams_frame(buf, sizeof(buf), &fr);
 
@@ -1290,8 +1340,10 @@ void test_ngtcp2_pkt_encode_data_blocked_frame(void) {
   size_t framelen = 1 + 8;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_DATA_BLOCKED;
-  fr.offset = 0x31f2f3f4f5f6f7f8llu;
+  fr = (ngtcp2_data_blocked){
+    .type = NGTCP2_FRAME_DATA_BLOCKED,
+    .offset = 0x31f2f3f4f5f6f7f8llu,
+  };
 
   rv = ngtcp2_pkt_encode_data_blocked_frame(buf, sizeof(buf), &fr);
 
@@ -1318,9 +1370,11 @@ void test_ngtcp2_pkt_encode_stream_data_blocked_frame(void) {
   size_t framelen = 1 + 8 + 8;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_STREAM_DATA_BLOCKED;
-  fr.stream_id = 0xf1f2f3f4u;
-  fr.offset = 0x35f6f7f8f9fafbfcllu;
+  fr = (ngtcp2_stream_data_blocked){
+    .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
+    .stream_id = 0xf1f2f3f4u,
+    .offset = 0x35f6f7f8f9fafbfcllu,
+  };
 
   rv = ngtcp2_pkt_encode_stream_data_blocked_frame(buf, sizeof(buf), &fr);
 
@@ -1348,8 +1402,10 @@ void test_ngtcp2_pkt_encode_streams_blocked_frame(void) {
   size_t framelen = 1 + 8;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_STREAMS_BLOCKED_BIDI;
-  fr.max_streams = 0xf1f2f3f4u;
+  fr = (ngtcp2_streams_blocked){
+    .type = NGTCP2_FRAME_STREAMS_BLOCKED_BIDI,
+    .max_streams = 0xf1f2f3f4u,
+  };
 
   rv = ngtcp2_pkt_encode_streams_blocked_frame(buf, sizeof(buf), &fr);
 
@@ -1376,9 +1432,11 @@ void test_ngtcp2_pkt_encode_new_connection_id_frame(void) {
   size_t framelen = 1 + 4 + 2 + 1 + 18 + NGTCP2_STATELESS_RESET_TOKENLEN;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_NEW_CONNECTION_ID;
-  fr.seq = 1000000009;
-  fr.retire_prior_to = 255;
+  fr = (ngtcp2_new_connection_id){
+    .type = NGTCP2_FRAME_NEW_CONNECTION_ID,
+    .seq = 1000000009,
+    .retire_prior_to = 255,
+  };
   scid_init(&fr.cid);
   memset(fr.stateless_reset_token, 0xe1, sizeof(fr.stateless_reset_token));
 
@@ -1410,9 +1468,11 @@ void test_ngtcp2_pkt_encode_stop_sending_frame(void) {
   size_t framelen = 1 + 8 + 4;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_STOP_SENDING;
-  fr.stream_id = 0xf1f2f3f4u;
-  fr.app_error_code = 0xe1e2u;
+  fr = (ngtcp2_stop_sending){
+    .type = NGTCP2_FRAME_STOP_SENDING,
+    .stream_id = 0xf1f2f3f4u,
+    .app_error_code = 0xe1e2u,
+  };
 
   rv = ngtcp2_pkt_encode_stop_sending_frame(buf, sizeof(buf), &fr);
 
@@ -1501,14 +1561,16 @@ void test_ngtcp2_pkt_encode_crypto_frame(void) {
   size_t framelen;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_CRYPTO;
-  fr.flags = 0;
-  fr.fin = 0;
-  fr.stream_id = 0;
-  fr.offset = 0x31f2f3f4f5f6f7f8llu;
-  fr.datacnt = 1;
-  fr.data[0].len = strsize(data);
-  fr.data[0].base = (uint8_t *)data;
+  fr = (ngtcp2_stream){
+    .type = NGTCP2_FRAME_CRYPTO,
+    .offset = 0x31f2f3f4f5f6f7f8llu,
+    .datacnt = 1,
+    .data[0] =
+      {
+        .len = strsize(data),
+        .base = (uint8_t *)data,
+      },
+  };
 
   framelen = 1 + 8 + 1 + 17;
 
@@ -1544,9 +1606,11 @@ void test_ngtcp2_pkt_encode_new_token_frame(void) {
   size_t framelen;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_NEW_TOKEN;
-  fr.token = (uint8_t *)token;
-  fr.tokenlen = strsize(token);
+  fr = (ngtcp2_new_token){
+    .type = NGTCP2_FRAME_NEW_TOKEN,
+    .token = (uint8_t *)token,
+    .tokenlen = strsize(token),
+  };
 
   framelen = 1 + 1 + strsize(token);
 
@@ -1576,8 +1640,10 @@ void test_ngtcp2_pkt_encode_retire_connection_id_frame(void) {
   size_t framelen;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_RETIRE_CONNECTION_ID;
-  fr.seq = 1000000007;
+  fr = (ngtcp2_retire_connection_id){
+    .type = NGTCP2_FRAME_RETIRE_CONNECTION_ID,
+    .seq = 1000000007,
+  };
 
   framelen = 1 + ngtcp2_put_uvarintlen(fr.seq);
 
@@ -1625,11 +1691,16 @@ void test_ngtcp2_pkt_encode_datagram_frame(void) {
   size_t framelen;
   size_t i;
 
-  fr.type = NGTCP2_FRAME_DATAGRAM_LEN;
-  fr.datacnt = 1;
-  fr.data = fr.rdata;
-  fr.rdata[0].len = strsize(data);
-  fr.rdata[0].base = (uint8_t *)data;
+  fr = (ngtcp2_datagram){
+    .type = NGTCP2_FRAME_DATAGRAM_LEN,
+    .datacnt = 1,
+    .data = fr.rdata,
+    .rdata[0] =
+      {
+        .len = strsize(data),
+        .base = (uint8_t *)data,
+      },
+  };
 
   framelen = 1 + 1 + 17;
 
@@ -1655,11 +1726,16 @@ void test_ngtcp2_pkt_encode_datagram_frame(void) {
   memset(&nfr, 0, sizeof(nfr));
 
   /* Without length field */
-  fr.type = NGTCP2_FRAME_DATAGRAM;
-  fr.datacnt = 1;
-  fr.data = fr.rdata;
-  fr.rdata[0].len = strsize(data);
-  fr.rdata[0].base = (uint8_t *)data;
+  fr = (ngtcp2_datagram){
+    .type = NGTCP2_FRAME_DATAGRAM,
+    .datacnt = 1,
+    .data = fr.rdata,
+    .rdata[0] =
+      {
+        .len = strsize(data),
+        .base = (uint8_t *)data,
+      },
+  };
 
   framelen = 1 + 17;
 
@@ -1685,9 +1761,9 @@ void test_ngtcp2_pkt_encode_datagram_frame(void) {
   memset(&nfr, 0, sizeof(nfr));
 
   /* Zero length data with length field */
-  fr.type = NGTCP2_FRAME_DATAGRAM_LEN;
-  fr.datacnt = 0;
-  fr.data = NULL;
+  fr = (ngtcp2_datagram){
+    .type = NGTCP2_FRAME_DATAGRAM_LEN,
+  };
 
   framelen = 1 + 1;
 
@@ -1713,9 +1789,9 @@ void test_ngtcp2_pkt_encode_datagram_frame(void) {
   memset(&nfr, 0, sizeof(nfr));
 
   /* Zero length data without length field */
-  fr.type = NGTCP2_FRAME_DATAGRAM;
-  fr.datacnt = 0;
-  fr.data = NULL;
+  fr = (ngtcp2_datagram){
+    .type = NGTCP2_FRAME_DATAGRAM,
+  };
 
   framelen = 1;
 
@@ -1754,31 +1830,37 @@ void test_ngtcp2_pkt_validate_ack(void) {
   ngtcp2_ack fr;
 
   /* too long first_ack_range */
-  fr.largest_ack = 1;
-  fr.first_ack_range = 2;
-  fr.rangecnt = 0;
+  fr = (ngtcp2_ack){
+    .largest_ack = 1,
+    .first_ack_range = 2,
+  };
 
   rv = ngtcp2_pkt_validate_ack(&fr, 0);
 
   assert_ptrdiff(NGTCP2_ERR_ACK_FRAME, ==, rv);
 
   /* gap is too large */
-  fr.largest_ack = 250;
-  fr.first_ack_range = 1;
-  fr.rangecnt = 1;
-  fr.ranges[0].gap = 248;
-  fr.ranges[0].len = 0;
+  fr = (ngtcp2_ack){
+    .largest_ack = 250,
+    .first_ack_range = 1,
+    .rangecnt = 1,
+    .ranges[0].gap = 248,
+  };
 
   rv = ngtcp2_pkt_validate_ack(&fr, 0);
 
   assert_ptrdiff(NGTCP2_ERR_ACK_FRAME, ==, rv);
 
   /* too large range len */
-  fr.largest_ack = 250;
-  fr.first_ack_range = 0;
-  fr.rangecnt = 1;
-  fr.ranges[0].gap = 248;
-  fr.ranges[0].len = 1;
+  fr = (ngtcp2_ack){
+    .largest_ack = 250,
+    .rangecnt = 1,
+    .ranges[0] =
+      {
+        .gap = 248,
+        .len = 1,
+      },
+  };
 
   rv = ngtcp2_pkt_validate_ack(&fr, 0);
 
@@ -1786,9 +1868,9 @@ void test_ngtcp2_pkt_validate_ack(void) {
 
   /* first ack range contains packet number that is smaller than the
      minimum. */
-  fr.largest_ack = 250;
-  fr.first_ack_range = 0;
-  fr.rangecnt = 0;
+  fr = (ngtcp2_ack){
+    .largest_ack = 250,
+  };
 
   rv = ngtcp2_pkt_validate_ack(&fr, 251);
 
@@ -1796,11 +1878,10 @@ void test_ngtcp2_pkt_validate_ack(void) {
 
   /* second ack range contains packet number that is smaller than the
      minimum. */
-  fr.largest_ack = 250;
-  fr.first_ack_range = 0;
-  fr.rangecnt = 1;
-  fr.ranges[0].gap = 0;
-  fr.ranges[0].len = 0;
+  fr = (ngtcp2_ack){
+    .largest_ack = 250,
+    .rangecnt = 1,
+  };
 
   rv = ngtcp2_pkt_validate_ack(&fr, 249);
 
@@ -1846,9 +1927,9 @@ void test_ngtcp2_pkt_write_stateless_reset(void) {
 
   /* Not enough buffer */
   spktlen = ngtcp2_pkt_write_stateless_reset(
-      buf,
-      NGTCP2_MIN_STATELESS_RESET_RANDLEN - 1 + NGTCP2_STATELESS_RESET_TOKENLEN,
-      token, rand, sizeof(rand));
+    buf,
+    NGTCP2_MIN_STATELESS_RESET_RANDLEN - 1 + NGTCP2_STATELESS_RESET_TOKENLEN,
+    token, rand, sizeof(rand));
 
   assert_ptrdiff(NGTCP2_ERR_NOBUF, ==, spktlen);
 }
@@ -1912,8 +1993,8 @@ void test_ngtcp2_pkt_write_version_negotiation(void) {
   scid_init(&scid);
 
   spktlen = ngtcp2_pkt_write_version_negotiation(
-      buf, sizeof(buf), 133, dcid.data, dcid.datalen, scid.data, scid.datalen,
-      sv, ngtcp2_arraylen(sv));
+    buf, sizeof(buf), 133, dcid.data, dcid.datalen, scid.data, scid.datalen, sv,
+    ngtcp2_arraylen(sv));
 
   assert_ptrdiff((ngtcp2_ssize)(1 + 4 + 1 + dcid.datalen + 1 + scid.datalen +
                                 ngtcp2_arraylen(sv) * 4),
@@ -1925,7 +2006,7 @@ void test_ngtcp2_pkt_write_version_negotiation(void) {
 
   ++p;
 
-  p = ngtcp2_get_uint32(&v, p);
+  p = ngtcp2_get_uint32be(&v, p);
 
   assert_uint32(0, ==, v);
 
@@ -1946,7 +2027,7 @@ void test_ngtcp2_pkt_write_version_negotiation(void) {
   p += scid.datalen;
 
   for (i = 0; i < ngtcp2_arraylen(sv); ++i) {
-    p = ngtcp2_get_uint32(&v, p);
+    p = ngtcp2_get_uint32be(&v, p);
 
     assert_uint32(sv[i], ==, v);
   }
@@ -2014,4 +2095,350 @@ void test_ngtcp2_pkt_stream_max_datalen(void) {
   len = ngtcp2_pkt_stream_max_datalen(63, 0, 16383, 16387);
 
   assert_size(16383, ==, len);
+}
+
+void test_ngtcp2_pkt_split_vec_rand(void) {
+  ngtcp2_pcg32 pcg;
+  ngtcp2_vec data[NGTCP2_MAX_STREAM_DATACNT];
+  uint64_t offsets[NGTCP2_MAX_STREAM_DATACNT];
+  size_t datacnt;
+
+  ngtcp2_pcg32_init(&pcg, 0);
+
+  data[0] = (ngtcp2_vec){
+    .base = null_data,
+    .len = 4096,
+  };
+  offsets[0] = 1000000007;
+
+  datacnt = ngtcp2_pkt_split_vec_rand(data, 1, offsets, &pcg, 3);
+
+  assert_size(4, ==, datacnt);
+
+  assert_size(1024, ==, data[0].len);
+  assert_ptr_equal(null_data, data[0].base);
+
+  assert_size(1024, ==, data[1].len);
+  assert_ptr_equal(null_data + 2048, data[1].base);
+
+  assert_size(1024, ==, data[2].len);
+  assert_ptr_equal(null_data + 1024, data[2].base);
+
+  assert_size(1024, ==, data[3].len);
+  assert_ptr_equal(null_data + 3072, data[3].base);
+
+  assert_uint64(1000000007, ==, offsets[0]);
+  assert_uint64(1000000007 + 2048, ==, offsets[1]);
+  assert_uint64(1000000007 + 1024, ==, offsets[2]);
+  assert_uint64(1000000007 + 3072, ==, offsets[3]);
+
+  ngtcp2_pcg32_init(&pcg, 1);
+
+  data[0] = (ngtcp2_vec){
+    .base = null_data,
+    .len = 4096,
+  };
+  offsets[0] = 1000000007;
+
+  datacnt = ngtcp2_pkt_split_vec_rand(data, 1, offsets, &pcg, 3);
+
+  assert_size(4, ==, datacnt);
+
+  assert_size(512, ==, data[0].len);
+  assert_ptr_equal(null_data, data[0].base);
+
+  assert_size(2048, ==, data[1].len);
+  assert_ptr_equal(null_data + 2048, data[1].base);
+
+  assert_size(1024, ==, data[2].len);
+  assert_ptr_equal(null_data + 1024, data[2].base);
+
+  assert_size(512, ==, data[3].len);
+  assert_ptr_equal(null_data + 512, data[3].base);
+
+  assert_uint64(1000000007, ==, offsets[0]);
+  assert_uint64(1000000007 + 2048, ==, offsets[1]);
+  assert_uint64(1000000007 + 1024, ==, offsets[2]);
+  assert_uint64(1000000007 + 512, ==, offsets[3]);
+}
+
+void test_ngtcp2_pkt_split_vec_at(void) {
+  ngtcp2_vec data[2] = {
+    {
+      .base = null_data,
+      .len = 4096,
+    },
+  };
+  uint64_t offsets[2] = {
+    1000000007,
+  };
+  size_t datacnt;
+
+  datacnt = ngtcp2_pkt_split_vec_at(data, 1, offsets, 111);
+
+  assert_size(2, ==, datacnt);
+
+  assert_size(111, ==, data[0].len);
+  assert_ptr_equal(null_data, data[0].base);
+
+  assert_size(4096 - 111, ==, data[1].len);
+  assert_ptr_equal(null_data + 111, data[1].base);
+
+  assert_uint64(1000000007, ==, offsets[0]);
+  assert_uint64(1000000007 + 111, ==, offsets[1]);
+}
+
+void test_ngtcp2_pkt_find_server_name(void) {
+  uint8_t rawbuf[4096] = {0};
+  ngtcp2_buf buf;
+  int rv;
+  ngtcp2_vec data;
+  ngtcp2_vec server_name;
+  size_t i;
+  uint8_t *p;
+
+  ngtcp2_buf_init(&buf, rawbuf, sizeof(rawbuf));
+
+  /* msg_type */
+  *buf.last++ = 1;
+  /* length */
+  buf.last = ngtcp2_put_uint24be(buf.last, 1000);
+  /* legacy_version */
+  buf.last = ngtcp2_put_uint16be(buf.last, 0x0303);
+  /* random */
+  buf.last += 32;
+  /* legacy_session_id */
+  *buf.last++ = 23;
+  buf.last += 23;
+  /* cipher_suites */
+  buf.last = ngtcp2_put_uint16be(buf.last, 125);
+  buf.last += 125;
+  /* legacy_compression_methods */
+  *buf.last++ = 7;
+  buf.last += 7;
+  /* extensions */
+  buf.last = ngtcp2_put_uint16be(buf.last, 400);
+  /* extension 1 */
+  buf.last = ngtcp2_put_uint16be(buf.last, 999);
+  buf.last = ngtcp2_put_uint16be(buf.last, 120);
+  buf.last += 120;
+  /* extension 2 */
+  buf.last = ngtcp2_put_uint16be(buf.last, 65530);
+  buf.last = ngtcp2_put_uint16be(buf.last, 0);
+  /* server_name extension */
+  buf.last = ngtcp2_put_uint16be(buf.last, 0);
+  buf.last = ngtcp2_put_uint16be(buf.last, 262);
+  /* server_name_list */
+  buf.last = ngtcp2_put_uint16be(buf.last, 260);
+  /* name_type */
+  *buf.last++ = 0;
+  /* name */
+  buf.last = ngtcp2_put_uint16be(buf.last, 257);
+  buf.last += 257;
+
+  data = (ngtcp2_vec){
+    .base = buf.pos,
+    .len = 1200,
+  };
+
+  rv = ngtcp2_pkt_find_server_name(&server_name, &data);
+
+  assert_int(1, ==, rv);
+  assert_size(257, ==, server_name.len);
+  assert_ptr_equal(buf.pos + 1 + 3 + 2 + 32 + 1 + 23 + 2 + 125 + 1 + 7 + 2 + 2 +
+                     2 + 120 + 2 + 2 + 2 + 2 + 2 + 1 + 2,
+                   server_name.base);
+
+  for (i = 1; i < ngtcp2_buf_len(&buf) + 1; ++i) {
+    p = malloc(i);
+
+    memcpy(p, buf.pos, i);
+
+    data = (ngtcp2_vec){
+      .base = p,
+      .len = i,
+    };
+
+    rv = ngtcp2_pkt_find_server_name(&server_name, &data);
+
+    free(p);
+
+    if (i == ngtcp2_buf_len(&buf)) {
+      assert_true(rv);
+      assert_size(257, ==, server_name.len);
+    } else {
+      assert_false(rv);
+    }
+  }
+}
+
+void test_ngtcp2_pkt_append_ping_and_padding(void) {
+  ngtcp2_pcg32 pcg;
+  ngtcp2_vec data[NGTCP2_MAX_STREAM_DATACNT];
+  size_t datacnt;
+
+  ngtcp2_pcg32_init(&pcg, 1000000009);
+
+  data[0] = (ngtcp2_vec){
+    .base = null_data,
+    .len = 999,
+  };
+
+  datacnt = ngtcp2_pkt_append_ping_and_padding(data, 1, &pcg, 19);
+
+  assert_size(7, ==, datacnt);
+  assert_ptr_equal(null_data, data[0].base);
+  assert_size(999, ==, data[0].len);
+  /* PADDING len = 2 */
+  assert_size(2, ==, data[1].len);
+  assert_null(data[1].base);
+  /* PADDING len = 5 */
+  assert_size(5, ==, data[2].len);
+  assert_null(data[2].base);
+  /* PADDING len = 1 */
+  assert_size(1, ==, data[3].len);
+  assert_null(data[3].base);
+  /* PADDING len = 6 */
+  assert_size(6, ==, data[4].len);
+  assert_null(data[4].base);
+  /* PADDING len = 2 */
+  assert_size(2, ==, data[5].len);
+  assert_null(data[5].base);
+  /* PADDING len = 3 */
+  assert_size(3, ==, data[6].len);
+  assert_null(data[6].base);
+
+  /* Stop adding frames because the array gets full. */
+  ngtcp2_pcg32_init(&pcg, 1000000009);
+
+  datacnt = ngtcp2_pkt_append_ping_and_padding(
+    data, NGTCP2_MAX_STREAM_DATACNT - 1, &pcg, 19);
+
+  assert_size(NGTCP2_MAX_STREAM_DATACNT, ==, datacnt);
+  /* PADDING len = 2 */
+  assert_size(2, ==, data[NGTCP2_MAX_STREAM_DATACNT - 1].len);
+  assert_null(data[NGTCP2_MAX_STREAM_DATACNT - 1].base);
+
+  /* The array is already full. */
+  ngtcp2_pcg32_init(&pcg, 1000000009);
+
+  datacnt = ngtcp2_pkt_append_ping_and_padding(data, NGTCP2_MAX_STREAM_DATACNT,
+                                               &pcg, 19);
+
+  assert_size(NGTCP2_MAX_STREAM_DATACNT, ==, datacnt);
+}
+
+void test_ngtcp2_pkt_permutate_vec(void) {
+  ngtcp2_pcg32 pcg;
+  ngtcp2_vec data[] = {
+    {
+      .base = null_data,
+      .len = 1,
+    },
+    {
+      .base = null_data + 1,
+      .len = 2,
+    },
+    {
+      .base = null_data + 1 + 2,
+      .len = 3,
+    },
+    {
+      .base = null_data + 1 + 2 + 3,
+      .len = 4,
+    },
+  };
+  uint64_t offsets[] = {
+    0,
+    1,
+    3,
+    6,
+  };
+
+  ngtcp2_pcg32_init(&pcg, 231);
+
+  ngtcp2_pkt_permutate_vec(data, ngtcp2_arraylen(data), offsets, &pcg);
+
+  assert_size(4, ==, data[0].len);
+  assert_ptr_equal(null_data + 6, data[0].base);
+
+  assert_size(1, ==, data[1].len);
+  assert_ptr_equal(null_data, data[1].base);
+
+  assert_size(2, ==, data[2].len);
+  assert_ptr_equal(null_data + 1, data[2].base);
+
+  assert_size(3, ==, data[3].len);
+  assert_ptr_equal(null_data + 3, data[3].base);
+
+  assert_uint64(6, ==, offsets[0]);
+  assert_uint64(0, ==, offsets[1]);
+  assert_uint64(1, ==, offsets[2]);
+  assert_uint64(3, ==, offsets[3]);
+}
+
+void test_ngtcp2_pkt_remove_vec_partial(void) {
+  ngtcp2_pcg32 pcg;
+  ngtcp2_vec data[2];
+  uint64_t offsets[2];
+  ngtcp2_vec removed;
+  ngtcp2_vec partial;
+  size_t datacnt;
+
+  ngtcp2_pcg32_init(&pcg, 0);
+
+  data[0] = (ngtcp2_vec){
+    .base = null_data,
+    .len = 1777,
+  };
+  offsets[0] = 551;
+
+  partial = (ngtcp2_vec){
+    .base = null_data + 111,
+    .len = 50,
+  };
+
+  datacnt =
+    ngtcp2_pkt_remove_vec_partial(&removed, data, 1, offsets, &pcg, &partial);
+
+  assert_size(datacnt, ==, 2);
+
+  assert_size(136, ==, data[0].len);
+  assert_ptr_equal(null_data, data[0].base);
+
+  assert_size(28, ==, removed.len);
+  assert_ptr_equal(null_data + 136, removed.base);
+
+  assert_size(1613, ==, data[1].len);
+  assert_ptr_equal(null_data + 164, data[1].base);
+
+  assert_uint64(offsets[0], ==, 551);
+  assert_uint64(offsets[1], ==, 551 + 164);
+
+  /* No ngtcp2_vec appended */
+  ngtcp2_pcg32_init(&pcg, 0);
+
+  data[0] = (ngtcp2_vec){
+    .base = null_data,
+    .len = 1777,
+  };
+  offsets[0] = 88;
+
+  partial = (ngtcp2_vec){
+    .base = null_data + 1775,
+    .len = 2,
+  };
+
+  datacnt =
+    ngtcp2_pkt_remove_vec_partial(&removed, data, 1, offsets, &pcg, &partial);
+
+  assert_size(datacnt, ==, 1);
+
+  assert_size(1776, ==, data[0].len);
+  assert_ptr_equal(null_data, data[0].base);
+
+  assert_size(1, ==, removed.len);
+  assert_ptr_equal(null_data + 1776, removed.base);
+
+  assert_uint64(offsets[0], ==, 88);
 }

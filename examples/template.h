@@ -29,12 +29,23 @@
 #include <functional>
 #include <utility>
 #include <type_traits>
+#include <span>
+
+template <std::integral T>
+[[nodiscard]] constexpr auto as_unsigned(T n) noexcept {
+  return static_cast<std::make_unsigned_t<T>>(n);
+}
+
+template <std::unsigned_integral T>
+[[nodiscard]] constexpr auto as_signed(T n) noexcept {
+  return static_cast<std::make_signed_t<T>>(n);
+}
 
 // inspired by <http://blog.korfuri.fr/post/go-defer-in-cpp/>, but our
 // template can take functions returning other than void.
 template <typename F, typename... T> struct Defer {
   Defer(F &&f, T &&...t)
-      : f(std::bind(std::forward<F>(f), std::forward<T>(t)...)) {}
+    : f(std::bind(std::forward<F>(f), std::forward<T>(t)...)) {}
   Defer(Defer &&o) noexcept : f(std::move(o.f)) {}
   ~Defer() { f(); }
 
@@ -56,16 +67,25 @@ template <typename T, size_t N> constexpr size_t str_size(T (&)[N]) {
 
 // User-defined literals for K, M, and G (powers of 1024)
 
-constexpr unsigned long long operator"" _k(unsigned long long k) {
+constexpr unsigned long long operator""_k(unsigned long long k) {
   return k * 1024;
 }
 
-constexpr unsigned long long operator"" _m(unsigned long long m) {
+constexpr unsigned long long operator""_m(unsigned long long m) {
   return m * 1024 * 1024;
 }
 
-constexpr unsigned long long operator"" _g(unsigned long long g) {
+constexpr unsigned long long operator""_g(unsigned long long g) {
   return g * 1024 * 1024 * 1024;
 }
 
-#endif // TEMPLATE_H
+template <typename T, std::size_t N>
+[[nodiscard]] std::span<uint8_t, N == std::dynamic_extent ? std::dynamic_extent
+                                                          : N * sizeof(T)>
+as_writable_uint8_span(std::span<T, N> s) noexcept {
+  return std::span<uint8_t, N == std::dynamic_extent ? std::dynamic_extent
+                                                     : N * sizeof(T)>{
+    reinterpret_cast<uint8_t *>(s.data()), s.size_bytes()};
+}
+
+#endif // !defined(TEMPLATE_H)

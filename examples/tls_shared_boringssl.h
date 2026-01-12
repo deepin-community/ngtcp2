@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif // HAVE_CONFIG_H
+#endif // defined(HAVE_CONFIG_H)
 
 #include <openssl/ssl.h>
 
@@ -35,17 +35,17 @@ namespace ngtcp2 {
 
 namespace tls {
 
-constexpr uint16_t CERTIFICATE_COMPRESSION_ALGO_BROTLI = 2;
+inline constexpr uint16_t CERTIFICATE_COMPRESSION_ALGO_BROTLI = 2;
 
 #ifdef HAVE_LIBBROTLI
 int cert_compress(SSL *ssl, CBB *out, const uint8_t *in, size_t in_len);
 
 int cert_decompress(SSL *ssl, CRYPTO_BUFFER **out, size_t uncompressed_len,
                     const uint8_t *in, size_t in_len);
-#endif // HAVE_LIBBROTLI
+#endif // defined(HAVE_LIBBROTLI)
 
 } // namespace tls
 
 } // namespace ngtcp2
 
-#endif // TLS_SHARED_BORINGSSL_H
+#endif // !defined(TLS_SHARED_BORINGSSL_H)

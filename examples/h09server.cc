@@ -45,6 +45,7 @@
 #include <libgen.h>
 
 #include <http-parser/http_parser.h>
+#include <urlparse.h>
 
 #include "h09server.h"
 #include "network.h"
@@ -70,13 +71,17 @@ constexpr size_t NGTCP2_STATELESS_RESET_BURST = 100;
 } // namespace
 
 namespace {
+constexpr size_t NGTCP2_TX_BUFLEN = 64_k;
+} // namespace
+
+namespace {
 auto randgen = util::make_mt19937();
 } // namespace
 
 Config config{};
 
 Stream::Stream(int64_t stream_id, Handler *handler)
-    : stream_id(stream_id), handler(handler), eos(false) {
+  : stream_id(stream_id), handler(handler), eos(false) {
   nghttp3_buf_init(&respbuf);
   htp.data = this;
   http_parser_init(&htp, HTTP_REQUEST);
@@ -116,22 +121,19 @@ struct Request {
 
 namespace {
 Request request_path(const std::string_view &uri) {
-  http_parser_url u;
+  urlparse_url u;
   Request req;
 
-  http_parser_url_init(&u);
-
-  if (auto rv = http_parser_parse_url(uri.data(), uri.size(),
-                                      /* is_connect = */ 0, &u);
+  if (auto rv = urlparse_parse_url(uri.data(), uri.size(),
+                                   /* is_connect = */ 0, &u);
       rv != 0) {
     return req;
   }
 
-  if (u.field_set & (1 << UF_PATH)) {
-    req.path = std::string(uri.data() + u.field_data[UF_PATH].off,
-                           u.field_data[UF_PATH].len);
+  if (u.field_set & (1 << URLPARSE_PATH)) {
+    req.path = util::get_string(uri, u, URLPARSE_PATH);
     if (req.path.find('%') != std::string::npos) {
-      req.path = util::percent_decode(std::begin(req.path), std::end(req.path));
+      req.path = util::percent_decode(req.path);
     }
     if (!req.path.empty() && req.path.back() == '/') {
       req.path += "index.html";
@@ -166,7 +168,7 @@ std::unordered_map<std::string, FileEntry> file_cache;
 
 std::pair<FileEntry, int> Stream::open_file(const std::string &path) {
   auto it = file_cache.find(path);
-  if (it != std::end(file_cache)) {
+  if (it != std::ranges::end(file_cache)) {
     return {(*it).second, 0};
   }
 
@@ -175,7 +177,7 @@ std::pair<FileEntry, int> Stream::open_file(const std::string &path) {
     return {{}, -1};
   }
 
-  struct stat st {};
+  struct stat st{};
   if (fstat(fd, &st) != 0) {
     close(fd);
     return {{}, -1};
@@ -188,7 +190,7 @@ std::pair<FileEntry, int> Stream::open_file(const std::string &path) {
     close(fd);
   } else {
     fe.fd = fd;
-    fe.len = st.st_size;
+    fe.len = static_cast<size_t>(st.st_size);
     if (fe.len) {
       fe.map = mmap(nullptr, fe.len, PROT_READ, MAP_SHARED, fd, 0);
       if (fe.map == MAP_FAILED) {
@@ -213,7 +215,7 @@ int Stream::send_status_response(unsigned int status_code) {
   status_resp_body = make_status_body(status_code);
 
   respbuf.begin = respbuf.pos =
-      reinterpret_cast<uint8_t *>(status_resp_body.data());
+    reinterpret_cast<uint8_t *>(status_resp_body.data());
   respbuf.end = respbuf.last = respbuf.begin + status_resp_body.size();
 
   handler->add_sendq(this);
@@ -248,7 +250,7 @@ int Stream::start_response() {
 
   if (!config.quiet) {
     auto nva = std::to_array({
-        util::make_nv_nn(":status", "200"),
+      util::make_nv_nn(":status", "200"),
     });
 
     debug::print_http_response_headers(stream_id, nva.data(), nva.size());
@@ -337,21 +339,24 @@ fail:
 } // namespace
 
 Handler::Handler(struct ev_loop *loop, Server *server)
-    : loop_(loop),
-      server_(server),
-      qlog_(nullptr),
-      scid_{},
-      nkey_update_(0),
-      no_gso_{
+  : loop_(loop),
+    server_(server),
+    qlog_(nullptr),
+    scid_{},
+    nkey_update_(0),
+    no_gso_{
 #ifdef UDP_SEGMENT
-          false
-#else  // !UDP_SEGMENT
-          true
-#endif // !UDP_SEGMENT
-      },
-      tx_{
-          .data = std::unique_ptr<uint8_t[]>(new uint8_t[64_k]),
-      } {
+      config.no_gso
+#else  // !defined(UDP_SEGMENT)
+      true
+#endif // !defined(UDP_SEGMENT)
+    },
+    close_wait_{
+      .next_pkts_recv = 1,
+    },
+    tx_{
+      .data = std::make_unique_for_overwrite<uint8_t[]>(NGTCP2_TX_BUFLEN),
+    } {
   ev_io_init(&wev_, writecb, 0, EV_WRITE);
   wev_.data = this;
   ev_timer_init(&timer_, timeoutcb, 0., 0.);
@@ -405,13 +410,11 @@ int Handler::handshake_completed() {
   std::array<uint8_t, NGTCP2_CRYPTO_MAX_REGULAR_TOKENLEN> token;
 
   auto path = ngtcp2_conn_get_path(conn_);
-  auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(
-               std::chrono::system_clock::now().time_since_epoch())
-               .count();
+  auto t = util::system_clock_now();
 
   auto tokenlen = ngtcp2_crypto_generate_regular_token(
-      token.data(), config.static_secret.data(), config.static_secret.size(),
-      path->remote.addr, path->remote.addrlen, t);
+    token.data(), config.static_secret.data(), config.static_secret.size(),
+    path->remote.addr, path->remote.addrlen, t);
   if (tokenlen < 0) {
     if (!config.quiet) {
       std::cerr << "Unable to generate token" << std::endl;
@@ -419,7 +422,8 @@ int Handler::handshake_completed() {
     return 0;
   }
 
-  if (auto rv = ngtcp2_conn_submit_new_token(conn_, token.data(), tokenlen);
+  if (auto rv = ngtcp2_conn_submit_new_token(conn_, token.data(),
+                                             as_unsigned(tokenlen));
       rv != 0) {
     if (!config.quiet) {
       std::cerr << "ngtcp2_conn_submit_new_token: " << ngtcp2_strerror(rv)
@@ -489,7 +493,7 @@ int acked_stream_data_offset(ngtcp2_conn *conn, int64_t stream_id,
 int Handler::acked_stream_data_offset(int64_t stream_id, uint64_t offset,
                                       uint64_t datalen) {
   auto it = streams_.find(stream_id);
-  assert(it != std::end(streams_));
+  assert(it != std::ranges::end(streams_));
   auto &stream = (*it).second;
   (void)stream;
 
@@ -511,9 +515,9 @@ void Handler::on_stream_open(int64_t stream_id) {
   if (!ngtcp2_is_bidi_stream(stream_id)) {
     return;
   }
-  auto it = streams_.find(stream_id);
-  (void)it;
-  assert(it == std::end(streams_));
+
+  assert(!streams_.contains(stream_id));
+
   streams_.emplace(stream_id, std::make_unique<Stream>(stream_id, this));
 }
 
@@ -531,8 +535,11 @@ int stream_close(ngtcp2_conn *conn, uint32_t flags, int64_t stream_id,
 
 namespace {
 void rand(uint8_t *dest, size_t destlen, const ngtcp2_rand_ctx *rand_ctx) {
-  auto dis = std::uniform_int_distribution<uint8_t>();
-  std::generate(dest, dest + destlen, [&dis]() { return dis(randgen); });
+  auto rv = util::generate_secure_random({dest, destlen});
+  if (rv != 0) {
+    assert(0);
+    abort();
+  }
 }
 } // namespace
 
@@ -545,8 +552,8 @@ int get_new_connection_id(ngtcp2_conn *conn, ngtcp2_cid *cid, uint8_t *token,
 
   cid->datalen = cidlen;
   if (ngtcp2_crypto_generate_stateless_reset_token(
-          token, config.static_secret.data(), config.static_secret.size(),
-          cid) != 0) {
+        token, config.static_secret.data(), config.static_secret.size(), cid) !=
+      0) {
     return NGTCP2_ERR_CALLBACK_FAILURE;
   }
 
@@ -597,13 +604,11 @@ int path_validation(ngtcp2_conn *conn, uint32_t flags, const ngtcp2_path *path,
   }
 
   std::array<uint8_t, NGTCP2_CRYPTO_MAX_REGULAR_TOKENLEN> token;
-  auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(
-               std::chrono::system_clock::now().time_since_epoch())
-               .count();
+  auto t = util::system_clock_now();
 
   auto tokenlen = ngtcp2_crypto_generate_regular_token(
-      token.data(), config.static_secret.data(), config.static_secret.size(),
-      path->remote.addr, path->remote.addrlen, t);
+    token.data(), config.static_secret.data(), config.static_secret.size(),
+    path->remote.addr, path->remote.addrlen, t);
   if (tokenlen < 0) {
     if (!config.quiet) {
       std::cerr << "Unable to generate token" << std::endl;
@@ -612,7 +617,8 @@ int path_validation(ngtcp2_conn *conn, uint32_t flags, const ngtcp2_path *path,
     return 0;
   }
 
-  if (auto rv = ngtcp2_conn_submit_new_token(conn, token.data(), tokenlen);
+  if (auto rv =
+        ngtcp2_conn_submit_new_token(conn, token.data(), as_unsigned(tokenlen));
       rv != 0) {
     if (!config.quiet) {
       std::cerr << "ngtcp2_conn_submit_new_token: " << ngtcp2_strerror(rv)
@@ -640,7 +646,7 @@ int extend_max_stream_data(ngtcp2_conn *conn, int64_t stream_id,
 
 int Handler::extend_max_stream_data(int64_t stream_id, uint64_t max_data) {
   auto it = streams_.find(stream_id);
-  assert(it != std::end(streams_));
+  assert(it != std::ranges::end(streams_));
   auto &stream = (*it).second;
 
   if (nghttp3_buf_len(&stream->respbuf)) {
@@ -669,45 +675,26 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
                   std::span<const uint8_t> token, ngtcp2_token_type token_type,
                   uint32_t version, TLSServerContext &tls_ctx) {
   auto callbacks = ngtcp2_callbacks{
-      nullptr, // client_initial
-      ngtcp2_crypto_recv_client_initial_cb,
-      ::recv_crypto_data,
-      ::handshake_completed,
-      nullptr, // recv_version_negotiation
-      ngtcp2_crypto_encrypt_cb,
-      ngtcp2_crypto_decrypt_cb,
-      do_hp_mask,
-      ::recv_stream_data,
-      ::acked_stream_data_offset,
-      stream_open,
-      stream_close,
-      nullptr, // recv_stateless_reset
-      nullptr, // recv_retry
-      nullptr, // extend_max_local_streams_bidi
-      nullptr, // extend_max_local_streams_uni
-      rand,
-      get_new_connection_id,
-      remove_connection_id,
-      ::update_key,
-      path_validation,
-      nullptr, // select_preferred_addr
-      nullptr, // stream_reset
-      nullptr, // extend_max_remote_streams_bidi
-      nullptr, // extend_max_remote_streams_uni
-      ::extend_max_stream_data,
-      nullptr, // dcid_status
-      nullptr, // handshake_confirmed
-      nullptr, // recv_new_token
-      ngtcp2_crypto_delete_crypto_aead_ctx_cb,
-      ngtcp2_crypto_delete_crypto_cipher_ctx_cb,
-      nullptr, // recv_datagram
-      nullptr, // ack_datagram
-      nullptr, // lost_datagram
-      ngtcp2_crypto_get_path_challenge_data_cb,
-      nullptr, // stream_stop_sending
-      ngtcp2_crypto_version_negotiation_cb,
-      nullptr, // recv_rx_key
-      nullptr, // recv_tx_key
+    .recv_client_initial = ngtcp2_crypto_recv_client_initial_cb,
+    .recv_crypto_data = ::recv_crypto_data,
+    .handshake_completed = ::handshake_completed,
+    .encrypt = ngtcp2_crypto_encrypt_cb,
+    .decrypt = ngtcp2_crypto_decrypt_cb,
+    .hp_mask = do_hp_mask,
+    .recv_stream_data = ::recv_stream_data,
+    .acked_stream_data_offset = ::acked_stream_data_offset,
+    .stream_open = stream_open,
+    .stream_close = stream_close,
+    .rand = rand,
+    .get_new_connection_id = get_new_connection_id,
+    .remove_connection_id = remove_connection_id,
+    .update_key = ::update_key,
+    .path_validation = path_validation,
+    .extend_max_stream_data = ::extend_max_stream_data,
+    .delete_crypto_aead_ctx = ngtcp2_crypto_delete_crypto_aead_ctx_cb,
+    .delete_crypto_cipher_ctx = ngtcp2_crypto_delete_crypto_cipher_ctx_cb,
+    .get_path_challenge_data = ngtcp2_crypto_get_path_challenge_data_cb,
+    .version_negotiation = ngtcp2_crypto_version_negotiation_cb,
   };
 
   scid_.datalen = NGTCP2_SV_SCIDLEN;
@@ -737,7 +724,7 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
   if (!config.qlog_dir.empty()) {
     auto path = std::string{config.qlog_dir};
     path += '/';
-    path += util::format_hex({scid_.data, scid_.datalen});
+    path += util::format_hex(scid_.data, as_signed(scid_.datalen));
     path += ".sqlog";
     qlog_ = fopen(path.c_str(), "w");
     if (qlog_ == nullptr) {
@@ -767,8 +754,8 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
     settings.pmtud_probeslen = config.pmtud_probes.size();
 
     if (!config.max_udp_payload_size) {
-      settings.max_tx_udp_payload_size = *std::max_element(
-          std::begin(config.pmtud_probes), std::end(config.pmtud_probes));
+      settings.max_tx_udp_payload_size =
+        *std::ranges::max_element(config.pmtud_probes);
     }
   }
 
@@ -776,7 +763,7 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
   ngtcp2_transport_params_default(&params);
   params.initial_max_stream_data_bidi_local = config.max_stream_data_bidi_local;
   params.initial_max_stream_data_bidi_remote =
-      config.max_stream_data_bidi_remote;
+    config.max_stream_data_bidi_remote;
   params.initial_max_stream_data_uni = config.max_stream_data_uni;
   params.initial_max_data = config.max_data;
   params.initial_max_streams_bidi = config.max_streams_bidi;
@@ -797,8 +784,8 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
   params.original_dcid_present = 1;
 
   if (ngtcp2_crypto_generate_stateless_reset_token(
-          params.stateless_reset_token, config.static_secret.data(),
-          config.static_secret.size(), &scid_) != 0) {
+        params.stateless_reset_token, config.static_secret.data(),
+        config.static_secret.size(), &scid_) != 0) {
     return -1;
   }
 
@@ -816,7 +803,7 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
     }
 
     if (util::generate_secure_random(
-            params.preferred_addr.stateless_reset_token) != 0) {
+          params.preferred_addr.stateless_reset_token) != 0) {
       std::cerr << "Could not generate preferred address stateless reset token"
                 << std::endl;
       return -1;
@@ -833,19 +820,21 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
   }
 
   auto path = ngtcp2_path{
+    .local =
       {
-          const_cast<sockaddr *>(&local_addr.su.sa),
-          local_addr.len,
+        .addr = const_cast<sockaddr *>(&local_addr.su.sa),
+        .addrlen = local_addr.len,
       },
+    .remote =
       {
-          const_cast<sockaddr *>(sa),
-          salen,
+        .addr = const_cast<sockaddr *>(sa),
+        .addrlen = salen,
       },
-      const_cast<Endpoint *>(&ep),
+    .user_data = const_cast<Endpoint *>(&ep),
   };
   if (auto rv =
-          ngtcp2_conn_server_new(&conn_, dcid, &scid_, &path, version,
-                                 &callbacks, &settings, &params, nullptr, this);
+        ngtcp2_conn_server_new(&conn_, dcid, &scid_, &path, version, &callbacks,
+                               &settings, &params, nullptr, this);
       rv != 0) {
     std::cerr << "ngtcp2_conn_server_new: " << ngtcp2_strerror(rv) << std::endl;
     return -1;
@@ -869,15 +858,17 @@ int Handler::feed_data(const Endpoint &ep, const Address &local_addr,
                        const ngtcp2_pkt_info *pi,
                        std::span<const uint8_t> data) {
   auto path = ngtcp2_path{
+    .local =
       {
-          const_cast<sockaddr *>(&local_addr.su.sa),
-          local_addr.len,
+        .addr = const_cast<sockaddr *>(&local_addr.su.sa),
+        .addrlen = local_addr.len,
       },
+    .remote =
       {
-          const_cast<sockaddr *>(sa),
-          salen,
+        .addr = const_cast<sockaddr *>(sa),
+        .addrlen = salen,
       },
-      const_cast<Endpoint *>(&ep),
+    .user_data = const_cast<Endpoint *>(&ep),
   };
 
   if (auto rv = ngtcp2_conn_read_pkt(conn_, &path, pi, data.data(), data.size(),
@@ -895,7 +886,7 @@ int Handler::feed_data(const Endpoint &ep, const Address &local_addr,
     case NGTCP2_ERR_CRYPTO:
       if (!last_error_.error_code) {
         ngtcp2_ccerr_set_tls_alert(
-            &last_error_, ngtcp2_conn_get_tls_alert(conn_), nullptr, 0);
+          &last_error_, ngtcp2_conn_get_tls_alert(conn_), nullptr, 0);
       }
       break;
     default:
@@ -960,32 +951,30 @@ int Handler::on_write() {
   return 0;
 }
 
-int Handler::write_streams() {
-  ngtcp2_vec vec;
-  ngtcp2_path_storage ps, prev_ps;
-  uint32_t prev_ecn = 0;
-  auto max_udp_payload_size = ngtcp2_conn_get_max_tx_udp_payload_size(conn_);
-  auto path_max_udp_payload_size =
-      ngtcp2_conn_get_path_max_tx_udp_payload_size(conn_);
-  ngtcp2_pkt_info pi;
-  size_t gso_size = 0;
-  auto ts = util::timestamp();
-  auto txbuf =
-      std::span{tx_.data.get(), std::max(ngtcp2_conn_get_send_quantum(conn_),
-                                         path_max_udp_payload_size)};
-  auto buf = txbuf;
+namespace {
+ngtcp2_ssize write_pkt(ngtcp2_conn *conn, ngtcp2_path *path,
+                       ngtcp2_pkt_info *pi, uint8_t *dest, size_t destlen,
+                       ngtcp2_tstamp ts, void *user_data) {
+  auto h = static_cast<Handler *>(user_data);
 
-  ngtcp2_path_storage_zero(&ps);
-  ngtcp2_path_storage_zero(&prev_ps);
+  return h->write_pkt(path, pi, dest, destlen, ts);
+}
+} // namespace
+
+ngtcp2_ssize Handler::write_pkt(ngtcp2_path *path, ngtcp2_pkt_info *pi,
+                                uint8_t *dest, size_t destlen,
+                                ngtcp2_tstamp ts) {
+  ngtcp2_vec vec;
 
   for (;;) {
     int64_t stream_id = -1;
     size_t vcnt = 0;
-    uint32_t flags = NGTCP2_WRITE_STREAM_FLAG_MORE;
+    uint32_t flags =
+      NGTCP2_WRITE_STREAM_FLAG_MORE | NGTCP2_WRITE_STREAM_FLAG_PADDING;
     Stream *stream = nullptr;
 
     if (!sendq_.empty() && ngtcp2_conn_get_max_data_left(conn_)) {
-      stream = *std::begin(sendq_);
+      stream = *std::ranges::begin(sendq_);
 
       stream_id = stream->stream_id;
       vec.base = stream->respbuf.pos;
@@ -996,156 +985,105 @@ int Handler::write_streams() {
 
     ngtcp2_ssize ndatalen;
 
-    auto buflen = buf.size() >= max_udp_payload_size
-                      ? max_udp_payload_size
-                      : path_max_udp_payload_size;
     auto nwrite =
-        ngtcp2_conn_writev_stream(conn_, &ps.path, &pi, buf.data(), buflen,
-                                  &ndatalen, flags, stream_id, &vec, vcnt, ts);
+      ngtcp2_conn_writev_stream(conn_, path, pi, dest, destlen, &ndatalen,
+                                flags, stream_id, &vec, vcnt, ts);
     if (nwrite < 0) {
       switch (nwrite) {
       case NGTCP2_ERR_STREAM_DATA_BLOCKED:
       case NGTCP2_ERR_STREAM_SHUT_WR:
         assert(ndatalen == -1);
-        sendq_.erase(std::begin(sendq_));
+        sendq_.erase(std::ranges::begin(sendq_));
         continue;
       case NGTCP2_ERR_WRITE_MORE:
         assert(ndatalen >= 0);
         stream->respbuf.pos += ndatalen;
         if (nghttp3_buf_len(&stream->respbuf) == 0) {
-          sendq_.erase(std::begin(sendq_));
+          sendq_.erase(std::ranges::begin(sendq_));
         }
         continue;
       }
 
       assert(ndatalen == -1);
 
-      std::cerr << "ngtcp2_conn_writev_stream: " << ngtcp2_strerror(nwrite)
-                << std::endl;
-      ngtcp2_ccerr_set_liberr(&last_error_, nwrite, nullptr, 0);
-      return handle_error();
-    } else if (ndatalen >= 0) {
+      std::cerr << "ngtcp2_conn_writev_stream: "
+                << ngtcp2_strerror(static_cast<int>(nwrite)) << std::endl;
+      ngtcp2_ccerr_set_liberr(&last_error_, static_cast<int>(nwrite), nullptr,
+                              0);
+
+      return NGTCP2_ERR_CALLBACK_FAILURE;
+    }
+
+    if (ndatalen >= 0) {
       stream->respbuf.pos += ndatalen;
       if (nghttp3_buf_len(&stream->respbuf) == 0) {
-        sendq_.erase(std::begin(sendq_));
+        sendq_.erase(std::ranges::begin(sendq_));
       }
     }
 
-    if (nwrite == 0) {
-      auto data = std::span{std::begin(txbuf), std::begin(buf)};
-      if (!data.empty()) {
-        auto &ep = *static_cast<Endpoint *>(prev_ps.path.user_data);
-
-        if (auto [rest, rv] = server_->send_packet(
-                ep, no_gso_, prev_ps.path.local, prev_ps.path.remote, prev_ecn,
-                data, gso_size);
-            rv != NETWORK_ERR_OK) {
-          assert(NETWORK_ERR_SEND_BLOCKED == rv);
-
-          on_send_blocked(ep, prev_ps.path.local, prev_ps.path.remote, prev_ecn,
-                          rest, gso_size);
-
-          start_wev_endpoint(ep);
-        }
-      }
-
-      // We are congestion limited.
-      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
-      return 0;
-    }
-
-    auto last_pkt = std::begin(buf);
-
-    buf = buf.subspan(nwrite);
-
-    if (last_pkt == std::begin(txbuf)) {
-      ngtcp2_path_copy(&prev_ps.path, &ps.path);
-      prev_ecn = pi.ecn;
-      gso_size = nwrite;
-    } else if (!ngtcp2_path_eq(&prev_ps.path, &ps.path) || prev_ecn != pi.ecn ||
-               static_cast<size_t>(nwrite) > gso_size ||
-               (gso_size > path_max_udp_payload_size &&
-                static_cast<size_t>(nwrite) != gso_size)) {
-      auto &ep = *static_cast<Endpoint *>(prev_ps.path.user_data);
-      auto data = std::span{std::begin(txbuf), last_pkt};
-
-      if (auto [rest, rv] = server_->send_packet(
-              ep, no_gso_, prev_ps.path.local, prev_ps.path.remote, prev_ecn,
-              data, gso_size);
-          rv != 0) {
-        assert(NETWORK_ERR_SEND_BLOCKED == rv);
-
-        on_send_blocked(ep, prev_ps.path.local, prev_ps.path.remote, prev_ecn,
-                        rest, gso_size);
-
-        data = std::span{last_pkt, std::begin(buf)};
-        on_send_blocked(*static_cast<Endpoint *>(ps.path.user_data),
-                        ps.path.local, ps.path.remote, pi.ecn, data,
-                        data.size());
-
-        start_wev_endpoint(ep);
-      } else {
-        auto &ep = *static_cast<Endpoint *>(ps.path.user_data);
-        auto data = std::span{last_pkt, std::begin(buf)};
-
-        if (auto [rest, rv] =
-                server_->send_packet(ep, no_gso_, ps.path.local, ps.path.remote,
-                                     pi.ecn, data, data.size());
-            rv != 0) {
-          assert(rest.size() == data.size());
-          assert(NETWORK_ERR_SEND_BLOCKED == rv);
-
-          on_send_blocked(ep, ps.path.local, ps.path.remote, pi.ecn, rest,
-                          rest.size());
-
-          start_wev_endpoint(ep);
-        }
-      }
-
-      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
-      return 0;
-    }
-
-    if (buf.size() < path_max_udp_payload_size ||
-        static_cast<size_t>(nwrite) < gso_size) {
-      auto &ep = *static_cast<Endpoint *>(ps.path.user_data);
-      auto data = std::span{std::begin(txbuf), std::begin(buf)};
-
-      if (auto [rest, rv] =
-              server_->send_packet(ep, no_gso_, ps.path.local, ps.path.remote,
-                                   pi.ecn, data, gso_size);
-          rv != 0) {
-        assert(NETWORK_ERR_SEND_BLOCKED == rv);
-
-        on_send_blocked(ep, ps.path.local, ps.path.remote, pi.ecn, rest,
-                        gso_size);
-
-        start_wev_endpoint(ep);
-      }
-
-      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
-      return 0;
-    }
+    return nwrite;
   }
 }
 
-void Handler::on_send_blocked(Endpoint &ep, const ngtcp2_addr &local_addr,
-                              const ngtcp2_addr &remote_addr, unsigned int ecn,
+int Handler::write_streams() {
+  ngtcp2_path_storage ps;
+  ngtcp2_pkt_info pi;
+  size_t gso_size;
+  auto ts = util::timestamp();
+  auto txbuf = std::span{tx_.data.get(), NGTCP2_TX_BUFLEN};
+
+  ngtcp2_path_storage_zero(&ps);
+
+  auto nwrite =
+    ngtcp2_conn_write_aggregate_pkt(conn_, &ps.path, &pi, txbuf.data(),
+                                    txbuf.size(), &gso_size, ::write_pkt, ts);
+  if (nwrite < 0) {
+    return handle_error();
+  }
+
+  if (nwrite == 0) {
+    return 0;
+  }
+
+  send_packet(ps.path, pi.ecn, txbuf.first(static_cast<size_t>(nwrite)),
+              gso_size);
+
+  return 0;
+}
+
+int Handler::send_packet(const ngtcp2_path &path, unsigned int ecn,
+                         std::span<const uint8_t> data, size_t gso_size) {
+  auto &ep = *static_cast<Endpoint *>(path.user_data);
+  auto [rest, rv] = server_->send_packet(ep, no_gso_, path.local, path.remote,
+                                         ecn, data, gso_size);
+  if (rv != 0) {
+    assert(NETWORK_ERR_SEND_BLOCKED == rv);
+
+    on_send_blocked(path, ecn, rest, gso_size);
+
+    start_wev_endpoint(ep);
+
+    return rv;
+  }
+
+  return 0;
+}
+
+void Handler::on_send_blocked(const ngtcp2_path &path, unsigned int ecn,
                               std::span<const uint8_t> data, size_t gso_size) {
-  assert(tx_.num_blocked || !tx_.send_blocked);
-  assert(tx_.num_blocked < 2);
+  assert(!tx_.send_blocked);
   assert(gso_size);
 
   tx_.send_blocked = true;
 
-  auto &p = tx_.blocked[tx_.num_blocked++];
+  auto &p = tx_.blocked;
 
-  memcpy(&p.local_addr.su, local_addr.addr, local_addr.addrlen);
-  memcpy(&p.remote_addr.su, remote_addr.addr, remote_addr.addrlen);
+  memcpy(&p.local_addr.su, path.local.addr, path.local.addrlen);
+  memcpy(&p.remote_addr.su, path.remote.addr, path.remote.addrlen);
 
-  p.local_addr.len = local_addr.addrlen;
-  p.remote_addr.len = remote_addr.addrlen;
-  p.endpoint = &ep;
+  p.local_addr.len = path.local.addrlen;
+  p.remote_addr.len = path.remote.addrlen;
+  p.endpoint = static_cast<Endpoint *>(path.user_data);
   p.ecn = ecn;
   p.data = data;
   p.gso_size = gso_size;
@@ -1168,35 +1106,30 @@ void Handler::start_wev_endpoint(const Endpoint &ep) {
 int Handler::send_blocked_packet() {
   assert(tx_.send_blocked);
 
-  for (; tx_.num_blocked_sent < tx_.num_blocked; ++tx_.num_blocked_sent) {
-    auto &p = tx_.blocked[tx_.num_blocked_sent];
+  auto &p = tx_.blocked;
 
-    ngtcp2_addr local_addr{
-        .addr = &p.local_addr.su.sa,
-        .addrlen = p.local_addr.len,
-    };
-    ngtcp2_addr remote_addr{
-        .addr = &p.remote_addr.su.sa,
-        .addrlen = p.remote_addr.len,
-    };
+  ngtcp2_addr local_addr{
+    .addr = &p.local_addr.su.sa,
+    .addrlen = p.local_addr.len,
+  };
+  ngtcp2_addr remote_addr{
+    .addr = &p.remote_addr.su.sa,
+    .addrlen = p.remote_addr.len,
+  };
 
-    auto [rest, rv] =
-        server_->send_packet(*p.endpoint, no_gso_, local_addr, remote_addr,
-                             p.ecn, p.data, p.gso_size);
-    if (rv != 0) {
-      assert(NETWORK_ERR_SEND_BLOCKED == rv);
+  auto [rest, rv] = server_->send_packet(
+    *p.endpoint, no_gso_, local_addr, remote_addr, p.ecn, p.data, p.gso_size);
+  if (rv != 0) {
+    assert(NETWORK_ERR_SEND_BLOCKED == rv);
 
-      p.data = rest;
+    p.data = rest;
 
-      start_wev_endpoint(*p.endpoint);
+    start_wev_endpoint(*p.endpoint);
 
-      return 0;
-    }
+    return 0;
   }
 
   tx_.send_blocked = false;
-  tx_.num_blocked = 0;
-  tx_.num_blocked_sent = 0;
 
   return 0;
 }
@@ -1208,7 +1141,7 @@ void Handler::start_draining_period() {
 
   ev_set_cb(&timer_, close_waitcb);
   timer_.repeat =
-      static_cast<ev_tstamp>(ngtcp2_conn_get_pto(conn_)) / NGTCP2_SECONDS * 3;
+    static_cast<ev_tstamp>(ngtcp2_conn_get_pto(conn_)) / NGTCP2_SECONDS * 3;
   ev_timer_again(loop_, &timer_);
 
   if (!config.quiet) {
@@ -1227,7 +1160,7 @@ int Handler::start_closing_period() {
 
   ev_set_cb(&timer_, close_waitcb);
   timer_.repeat =
-      static_cast<ev_tstamp>(ngtcp2_conn_get_pto(conn_)) / NGTCP2_SECONDS * 3;
+    static_cast<ev_tstamp>(ngtcp2_conn_get_pto(conn_)) / NGTCP2_SECONDS * 3;
   ev_timer_again(loop_, &timer_);
 
   if (!config.quiet) {
@@ -1243,11 +1176,11 @@ int Handler::start_closing_period() {
 
   ngtcp2_pkt_info pi;
   auto n = ngtcp2_conn_write_connection_close(
-      conn_, &ps.path, &pi, conn_closebuf_->wpos(), conn_closebuf_->left(),
-      &last_error_, util::timestamp());
+    conn_, &ps.path, &pi, conn_closebuf_->wpos(), conn_closebuf_->left(),
+    &last_error_, util::timestamp());
   if (n < 0) {
-    std::cerr << "ngtcp2_conn_write_connection_close: " << ngtcp2_strerror(n)
-              << std::endl;
+    std::cerr << "ngtcp2_conn_write_connection_close: "
+              << ngtcp2_strerror(static_cast<int>(n)) << std::endl;
     return -1;
   }
 
@@ -1255,7 +1188,7 @@ int Handler::start_closing_period() {
     return 0;
   }
 
-  conn_closebuf_->push(n);
+  conn_closebuf_->push(as_unsigned(n));
 
   return 0;
 }
@@ -1294,6 +1227,47 @@ int Handler::send_conn_close() {
   return server_->send_packet(*static_cast<Endpoint *>(path->user_data),
                               path->local, path->remote,
                               /* ecn = */ 0, conn_closebuf_->data());
+}
+
+int Handler::send_conn_close(const Endpoint &ep, const Address &local_addr,
+                             const sockaddr *sa, socklen_t salen,
+                             const ngtcp2_pkt_info *pi,
+                             std::span<const uint8_t> data) {
+  assert(conn_closebuf_ && conn_closebuf_->size());
+
+  close_wait_.bytes_recv += data.size();
+  ++close_wait_.num_pkts_recv;
+
+  if (close_wait_.num_pkts_recv < close_wait_.next_pkts_recv ||
+      close_wait_.bytes_recv * 3 <
+        close_wait_.bytes_sent + conn_closebuf_->size()) {
+    return 0;
+  }
+
+  auto path = ngtcp2_path{
+    .local =
+      {
+        .addr = const_cast<sockaddr *>(&local_addr.su.sa),
+        .addrlen = local_addr.len,
+      },
+    .remote =
+      {
+        .addr = const_cast<sockaddr *>(sa),
+        .addrlen = salen,
+      },
+    .user_data = const_cast<Endpoint *>(&ep),
+  };
+
+  auto rv = server_->send_packet(ep, path.local, path.remote,
+                                 /* ecn = */ 0, conn_closebuf_->data());
+  if (rv != 0) {
+    return rv;
+  }
+
+  close_wait_.bytes_sent += conn_closebuf_->size();
+  close_wait_.next_pkts_recv *= 2;
+
+  return 0;
 }
 
 void Handler::update_timer() {
@@ -1351,16 +1325,9 @@ int on_msg_complete(http_parser *htp) {
 } // namespace
 
 auto htp_settings = http_parser_settings{
-    on_msg_begin,    // on_message_begin
-    on_url_cb,       // on_url
-    nullptr,         // on_status
-    nullptr,         // on_header_field
-    nullptr,         // on_header_value
-    nullptr,         // on_headers_complete
-    nullptr,         // on_body
-    on_msg_complete, // on_message_complete
-    nullptr,         // on_chunk_header,
-    nullptr,         // on_chunk_complete
+  .on_message_begin = on_msg_begin,
+  .on_url = on_url_cb,
+  .on_message_complete = on_msg_complete,
 };
 
 int Handler::recv_stream_data(uint32_t flags, int64_t stream_id,
@@ -1370,13 +1337,13 @@ int Handler::recv_stream_data(uint32_t flags, int64_t stream_id,
   }
 
   auto it = streams_.find(stream_id);
-  assert(it != std::end(streams_));
+  assert(it != std::ranges::end(streams_));
   auto &stream = (*it).second;
 
   if (!stream->eos) {
     auto nread = http_parser_execute(
-        &stream->htp, &htp_settings,
-        reinterpret_cast<const char *>(data.data()), data.size());
+      &stream->htp, &htp_settings, reinterpret_cast<const char *>(data.data()),
+      data.size());
     if (nread != data.size()) {
       if (auto rv = ngtcp2_conn_shutdown_stream(conn_, 0, stream_id,
                                                 /* app error code */ 1);
@@ -1436,7 +1403,7 @@ int Handler::on_stream_close(int64_t stream_id, uint64_t app_error_code) {
   }
 
   auto it = streams_.find(stream_id);
-  assert(it != std::end(streams_));
+  assert(it != std::ranges::end(streams_));
   auto &stream = (*it).second;
 
   sendq_.erase(stream.get());
@@ -1456,7 +1423,7 @@ int Handler::on_stream_close(int64_t stream_id, uint64_t app_error_code) {
   return 0;
 }
 
-void Handler::shutdown_read(int64_t stream_id, int app_error_code) {
+void Handler::shutdown_read(int64_t stream_id, uint64_t app_error_code) {
   ngtcp2_conn_shutdown_stream_read(conn_, 0, stream_id, app_error_code);
 }
 
@@ -1477,19 +1444,19 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 } // namespace
 
 Server::Server(struct ev_loop *loop, TLSServerContext &tls_ctx)
-    : loop_(loop),
-      tls_ctx_(tls_ctx),
-      stateless_reset_bucket_(NGTCP2_STATELESS_RESET_BURST) {
+  : loop_(loop),
+    tls_ctx_(tls_ctx),
+    stateless_reset_bucket_(NGTCP2_STATELESS_RESET_BURST) {
   ev_signal_init(&sigintev_, siginthandler, SIGINT);
 
   ev_timer_init(
-      &stateless_reset_regen_timer_,
-      [](struct ev_loop *loop, ev_timer *w, int revents) {
-        auto server = static_cast<Server *>(w->data);
+    &stateless_reset_regen_timer_,
+    [](struct ev_loop *loop, ev_timer *w, int revents) {
+      auto server = static_cast<Server *>(w->data);
 
-        server->on_stateless_reset_regen();
-      },
-      0., 1.);
+      server->on_stateless_reset_regen();
+    },
+    0., 1.);
   stateless_reset_regen_timer_.data = this;
 }
 
@@ -1509,7 +1476,7 @@ void Server::disconnect() {
   ev_signal_stop(loop_, &sigintev_);
 
   while (!handlers_.empty()) {
-    auto it = std::begin(handlers_);
+    auto it = std::ranges::begin(handlers_);
     auto &h = (*it).second;
 
     h->handle_error();
@@ -1529,13 +1496,13 @@ void Server::close() {
 namespace {
 int create_sock(Address &local_addr, const char *addr, const char *port,
                 int family) {
-  addrinfo hints{};
+  addrinfo hints{
+    .ai_flags = AI_PASSIVE,
+    .ai_family = family,
+    .ai_socktype = SOCK_DGRAM,
+  };
   addrinfo *res, *rp;
   int val = 1;
-
-  hints.ai_family = family;
-  hints.ai_socktype = SOCK_DGRAM;
-  hints.ai_flags = AI_PASSIVE;
 
   if (strcmp(addr, "*") == 0) {
     addr = nullptr;
@@ -1584,6 +1551,7 @@ int create_sock(Address &local_addr, const char *addr, const char *port,
     fd_set_recv_ecn(fd, rp->ai_family);
     fd_set_ip_mtu_discover(fd, rp->ai_family);
     fd_set_ip_dontfrag(fd, family);
+    fd_set_udp_gro(fd);
 
     if (bind(fd, rp->ai_addr, rp->ai_addrlen) != -1) {
       break;
@@ -1669,6 +1637,7 @@ int add_endpoint(std::vector<Endpoint> &endpoints, const Address &addr) {
   fd_set_recv_ecn(fd, addr.su.sa.sa_family);
   fd_set_ip_mtu_discover(fd, addr.su.sa.sa_family);
   fd_set_ip_dontfrag(fd, addr.su.sa.sa_family);
+  fd_set_udp_gro(fd);
 
   if (bind(fd, &addr.su.sa, addr.len) == -1) {
     std::cerr << "bind: " << strerror(errno) << std::endl;
@@ -1725,24 +1694,26 @@ int Server::init(const char *addr, const char *port) {
   return 0;
 }
 
-int Server::on_read(Endpoint &ep) {
+int Server::on_read(const Endpoint &ep) {
   sockaddr_union su;
-  std::array<uint8_t, 64_k - 1> buf;
+  std::array<uint8_t, 64_k> buf;
   size_t pktcnt = 0;
   ngtcp2_pkt_info pi;
 
-  iovec msg_iov;
-  msg_iov.iov_base = buf.data();
-  msg_iov.iov_len = buf.size();
-
-  msghdr msg{};
-  msg.msg_name = &su;
-  msg.msg_iov = &msg_iov;
-  msg.msg_iovlen = 1;
+  iovec msg_iov{
+    .iov_base = buf.data(),
+    .iov_len = buf.size(),
+  };
 
   uint8_t msg_ctrl[CMSG_SPACE(sizeof(int)) + CMSG_SPACE(sizeof(in6_pktinfo)) +
-                   CMSG_SPACE(sizeof(uint16_t))];
-  msg.msg_control = msg_ctrl;
+                   CMSG_SPACE(sizeof(int))];
+
+  msghdr msg{
+    .msg_name = &su,
+    .msg_iov = &msg_iov,
+    .msg_iovlen = 1,
+    .msg_control = msg_ctrl,
+  };
 
   for (; pktcnt < 10;) {
     msg.msg_namelen = sizeof(su);
@@ -1756,8 +1727,8 @@ int Server::on_read(Endpoint &ep) {
       return 0;
     }
 
-    // Packets less than 22 bytes never be a valid QUIC packet.
-    if (nread < 22) {
+    // Packets less than 21 bytes never be a valid QUIC packet.
+    if (nread < 21) {
       ++pktcnt;
 
       continue;
@@ -1802,8 +1773,8 @@ int Server::on_read(Endpoint &ep) {
                   << std::dec << " " << datalen << " bytes" << std::endl;
       }
 
-      // Packets less than 22 bytes never be a valid QUIC packet.
-      if (datalen < 22) {
+      // Packets less than 21 bytes never be a valid QUIC packet.
+      if (datalen < 21) {
         break;
       }
 
@@ -1823,7 +1794,7 @@ int Server::on_read(Endpoint &ep) {
   return 0;
 }
 
-void Server::read_pkt(Endpoint &ep, const Address &local_addr,
+void Server::read_pkt(const Endpoint &ep, const Address &local_addr,
                       const sockaddr *sa, socklen_t salen,
                       const ngtcp2_pkt_info *pi,
                       std::span<const uint8_t> data) {
@@ -1847,7 +1818,7 @@ void Server::read_pkt(Endpoint &ep, const Address &local_addr,
   auto dcid_key = util::make_cid_key({vc.dcid, vc.dcidlen});
 
   auto handler_it = handlers_.find(dcid_key);
-  if (handler_it == std::end(handlers_)) {
+  if (handler_it == std::ranges::end(handlers_)) {
     ngtcp2_pkt_hd hd;
 
     if (auto rv = ngtcp2_accept(&hd, data.data(), data.size()); rv != 0) {
@@ -1856,7 +1827,7 @@ void Server::read_pkt(Endpoint &ep, const Address &local_addr,
                   << std::endl;
       }
 
-      if (!(data[0] & 0x80) && data.size() >= NGTCP2_SV_SCIDLEN + 22) {
+      if (!(data[0] & 0x80) && data.size() >= NGTCP2_SV_SCIDLEN + 21) {
         send_stateless_reset(data.size(), {vc.dcid, vc.dcidlen}, ep, local_addr,
                              sa, salen);
       }
@@ -1877,21 +1848,27 @@ void Server::read_pkt(Endpoint &ep, const Address &local_addr,
         return;
       }
 
-      if (hd.token[0] != NGTCP2_CRYPTO_TOKEN_MAGIC_RETRY &&
+      if (hd.token[0] != NGTCP2_CRYPTO_TOKEN_MAGIC_RETRY2 &&
           hd.dcid.datalen < NGTCP2_MIN_INITIAL_DCIDLEN) {
         send_stateless_connection_close(&hd, ep, local_addr, sa, salen);
         return;
       }
 
       switch (hd.token[0]) {
-      case NGTCP2_CRYPTO_TOKEN_MAGIC_RETRY:
-        if (verify_retry_token(&ocid, &hd, sa, salen) != 0) {
+      case NGTCP2_CRYPTO_TOKEN_MAGIC_RETRY2:
+        switch (verify_retry_token(&ocid, &hd, sa, salen)) {
+        case 0:
+          pocid = &ocid;
+          token_type = NGTCP2_TOKEN_TYPE_RETRY;
+          break;
+        case -1:
           send_stateless_connection_close(&hd, ep, local_addr, sa, salen);
           return;
+        case 1:
+          hd.token = nullptr;
+          hd.tokenlen = 0;
+          break;
         }
-        pocid = &ocid;
-
-        token_type = NGTCP2_TOKEN_TYPE_RETRY;
 
         break;
       case NGTCP2_CRYPTO_TOKEN_MAGIC_REGULAR:
@@ -1964,8 +1941,7 @@ void Server::read_pkt(Endpoint &ep, const Address &local_addr,
   auto h = (*handler_it).second;
   auto conn = h->conn();
   if (ngtcp2_conn_in_closing_period(conn)) {
-    // TODO do exponential backoff.
-    if (h->send_conn_close() != 0) {
+    if (h->send_conn_close(ep, local_addr, sa, salen, pi, data) != 0) {
       remove(h);
     }
     return;
@@ -2010,12 +1986,13 @@ uint32_t generate_reserved_version(const sockaddr *sa, socklen_t salen,
 int Server::send_version_negotiation(uint32_t version,
                                      std::span<const uint8_t> dcid,
                                      std::span<const uint8_t> scid,
-                                     Endpoint &ep, const Address &local_addr,
+                                     const Endpoint &ep,
+                                     const Address &local_addr,
                                      const sockaddr *sa, socklen_t salen) {
   Buffer buf{NGTCP2_MAX_UDP_PAYLOAD_SIZE};
   std::array<uint32_t, 1 + max_preferred_versionslen> sv;
 
-  auto p = std::begin(sv);
+  auto p = std::ranges::begin(sv);
 
   *p++ = generate_reserved_version(sa, salen, version);
 
@@ -2028,24 +2005,24 @@ int Server::send_version_negotiation(uint32_t version,
   }
 
   auto nwrite = ngtcp2_pkt_write_version_negotiation(
-      buf.wpos(), buf.left(), std::uniform_int_distribution<uint8_t>()(randgen),
-      dcid.data(), dcid.size(), scid.data(), scid.size(), sv.data(),
-      p - std::begin(sv));
+    buf.wpos(), buf.left(), std::uniform_int_distribution<uint8_t>()(randgen),
+    dcid.data(), dcid.size(), scid.data(), scid.size(), sv.data(),
+    as_unsigned(p - std::ranges::begin(sv)));
   if (nwrite < 0) {
     std::cerr << "ngtcp2_pkt_write_version_negotiation: "
-              << ngtcp2_strerror(nwrite) << std::endl;
+              << ngtcp2_strerror(static_cast<int>(nwrite)) << std::endl;
     return -1;
   }
 
-  buf.push(nwrite);
+  buf.push(as_unsigned(nwrite));
 
   ngtcp2_addr laddr{
-      const_cast<sockaddr *>(&local_addr.su.sa),
-      local_addr.len,
+    .addr = const_cast<sockaddr *>(&local_addr.su.sa),
+    .addrlen = local_addr.len,
   };
   ngtcp2_addr raddr{
-      const_cast<sockaddr *>(sa),
-      salen,
+    .addr = const_cast<sockaddr *>(sa),
+    .addrlen = salen,
   };
 
   if (send_packet(ep, laddr, raddr, /* ecn = */ 0, buf.data()) !=
@@ -2056,7 +2033,7 @@ int Server::send_version_negotiation(uint32_t version,
   return 0;
 }
 
-int Server::send_retry(const ngtcp2_pkt_hd *chd, Endpoint &ep,
+int Server::send_retry(const ngtcp2_pkt_hd *chd, const Endpoint &ep,
                        const Address &local_addr, const sockaddr *sa,
                        socklen_t salen, size_t max_pktlen) {
   std::array<char, NI_MAXHOST> host;
@@ -2081,44 +2058,42 @@ int Server::send_retry(const ngtcp2_pkt_hd *chd, Endpoint &ep,
     return -1;
   }
 
-  std::array<uint8_t, NGTCP2_CRYPTO_MAX_RETRY_TOKENLEN> token;
+  std::array<uint8_t, NGTCP2_CRYPTO_MAX_RETRY_TOKENLEN2> token;
 
-  auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(
-               std::chrono::system_clock::now().time_since_epoch())
-               .count();
+  auto t = util::system_clock_now();
 
-  auto tokenlen = ngtcp2_crypto_generate_retry_token(
-      token.data(), config.static_secret.data(), config.static_secret.size(),
-      chd->version, sa, salen, &scid, &chd->dcid, t);
+  auto tokenlen = ngtcp2_crypto_generate_retry_token2(
+    token.data(), config.static_secret.data(), config.static_secret.size(),
+    chd->version, sa, salen, &scid, &chd->dcid, t);
   if (tokenlen < 0) {
     return -1;
   }
 
   if (!config.quiet) {
     std::cerr << "Generated address validation token:" << std::endl;
-    util::hexdump(stderr, token.data(), tokenlen);
+    util::hexdump(stderr, token.data(), as_unsigned(tokenlen));
   }
 
   Buffer buf{
-      std::min(static_cast<size_t>(NGTCP2_MAX_UDP_PAYLOAD_SIZE), max_pktlen)};
+    std::min(static_cast<size_t>(NGTCP2_MAX_UDP_PAYLOAD_SIZE), max_pktlen)};
 
   auto nwrite = ngtcp2_crypto_write_retry(buf.wpos(), buf.left(), chd->version,
                                           &chd->scid, &scid, &chd->dcid,
-                                          token.data(), tokenlen);
+                                          token.data(), as_unsigned(tokenlen));
   if (nwrite < 0) {
     std::cerr << "ngtcp2_crypto_write_retry failed" << std::endl;
     return -1;
   }
 
-  buf.push(nwrite);
+  buf.push(as_unsigned(nwrite));
 
   ngtcp2_addr laddr{
-      const_cast<sockaddr *>(&local_addr.su.sa),
-      local_addr.len,
+    .addr = const_cast<sockaddr *>(&local_addr.su.sa),
+    .addrlen = local_addr.len,
   };
   ngtcp2_addr raddr{
-      const_cast<sockaddr *>(sa),
-      salen,
+    .addr = const_cast<sockaddr *>(sa),
+    .addrlen = salen,
   };
 
   if (send_packet(ep, laddr, raddr, /* ecn = */ 0, buf.data()) !=
@@ -2130,29 +2105,29 @@ int Server::send_retry(const ngtcp2_pkt_hd *chd, Endpoint &ep,
 }
 
 int Server::send_stateless_connection_close(const ngtcp2_pkt_hd *chd,
-                                            Endpoint &ep,
+                                            const Endpoint &ep,
                                             const Address &local_addr,
                                             const sockaddr *sa,
                                             socklen_t salen) {
   Buffer buf{NGTCP2_MAX_UDP_PAYLOAD_SIZE};
 
   auto nwrite = ngtcp2_crypto_write_connection_close(
-      buf.wpos(), buf.left(), chd->version, &chd->scid, &chd->dcid,
-      NGTCP2_INVALID_TOKEN, nullptr, 0);
+    buf.wpos(), buf.left(), chd->version, &chd->scid, &chd->dcid,
+    NGTCP2_INVALID_TOKEN, nullptr, 0);
   if (nwrite < 0) {
     std::cerr << "ngtcp2_crypto_write_connection_close failed" << std::endl;
     return -1;
   }
 
-  buf.push(nwrite);
+  buf.push(as_unsigned(nwrite));
 
   ngtcp2_addr laddr{
-      const_cast<sockaddr *>(&local_addr.su.sa),
-      local_addr.len,
+    .addr = const_cast<sockaddr *>(&local_addr.su.sa),
+    .addrlen = local_addr.len,
   };
   ngtcp2_addr raddr{
-      const_cast<sockaddr *>(sa),
-      salen,
+    .addr = const_cast<sockaddr *>(sa),
+    .addrlen = salen,
   };
 
   if (send_packet(ep, laddr, raddr, /* ecn = */ 0, buf.data()) !=
@@ -2164,7 +2139,7 @@ int Server::send_stateless_connection_close(const ngtcp2_pkt_hd *chd,
 }
 
 int Server::send_stateless_reset(size_t pktlen, std::span<const uint8_t> dcid,
-                                 Endpoint &ep, const Address &local_addr,
+                                 const Endpoint &ep, const Address &local_addr,
                                  const sockaddr *sa, socklen_t salen) {
   if (stateless_reset_bucket_ == 0) {
     return 0;
@@ -2183,14 +2158,14 @@ int Server::send_stateless_reset(size_t pktlen, std::span<const uint8_t> dcid,
   std::array<uint8_t, NGTCP2_STATELESS_RESET_TOKENLEN> token;
 
   if (ngtcp2_crypto_generate_stateless_reset_token(
-          token.data(), config.static_secret.data(),
-          config.static_secret.size(), &cid) != 0) {
+        token.data(), config.static_secret.data(), config.static_secret.size(),
+        &cid) != 0) {
     return -1;
   }
 
   // SCID + minimum expansion - NGTCP2_STATELESS_RESET_TOKENLEN
   constexpr size_t max_rand_byteslen =
-      NGTCP2_MAX_CIDLEN + 22 - NGTCP2_STATELESS_RESET_TOKENLEN;
+    NGTCP2_MAX_CIDLEN + 22 - NGTCP2_STATELESS_RESET_TOKENLEN;
 
   size_t rand_byteslen;
 
@@ -2211,23 +2186,23 @@ int Server::send_stateless_reset(size_t pktlen, std::span<const uint8_t> dcid,
   Buffer buf{NGTCP2_MAX_UDP_PAYLOAD_SIZE};
 
   auto nwrite = ngtcp2_pkt_write_stateless_reset(
-      buf.wpos(), buf.left(), token.data(), rand_bytes.data(), rand_byteslen);
+    buf.wpos(), buf.left(), token.data(), rand_bytes.data(), rand_byteslen);
   if (nwrite < 0) {
-    std::cerr << "ngtcp2_pkt_write_stateless_reset: " << ngtcp2_strerror(nwrite)
-              << std::endl;
+    std::cerr << "ngtcp2_pkt_write_stateless_reset: "
+              << ngtcp2_strerror(static_cast<int>(nwrite)) << std::endl;
 
     return -1;
   }
 
-  buf.push(nwrite);
+  buf.push(as_unsigned(nwrite));
 
   ngtcp2_addr laddr{
-      const_cast<sockaddr *>(&local_addr.su.sa),
-      local_addr.len,
+    .addr = const_cast<sockaddr *>(&local_addr.su.sa),
+    .addrlen = local_addr.len,
   };
   ngtcp2_addr raddr{
-      const_cast<sockaddr *>(sa),
-      salen,
+    .addr = const_cast<sockaddr *>(sa),
+    .addrlen = salen,
   };
 
   if (send_packet(ep, laddr, raddr, /* ecn = */ 0, buf.data()) !=
@@ -2240,33 +2215,42 @@ int Server::send_stateless_reset(size_t pktlen, std::span<const uint8_t> dcid,
 
 int Server::verify_retry_token(ngtcp2_cid *ocid, const ngtcp2_pkt_hd *hd,
                                const sockaddr *sa, socklen_t salen) {
-  std::array<char, NI_MAXHOST> host;
-  std::array<char, NI_MAXSERV> port;
-
-  if (auto rv = getnameinfo(sa, salen, host.data(), host.size(), port.data(),
-                            port.size(), NI_NUMERICHOST | NI_NUMERICSERV);
-      rv != 0) {
-    std::cerr << "getnameinfo: " << gai_strerror(rv) << std::endl;
-    return -1;
-  }
+  int rv;
 
   if (!config.quiet) {
+    std::array<char, NI_MAXHOST> host;
+    std::array<char, NI_MAXSERV> port;
+
+    if (auto rv = getnameinfo(sa, salen, host.data(), host.size(), port.data(),
+                              port.size(), NI_NUMERICHOST | NI_NUMERICSERV);
+        rv != 0) {
+      std::cerr << "getnameinfo: " << gai_strerror(rv) << std::endl;
+      return -1;
+    }
+
     std::cerr << "Verifying Retry token from [" << host.data()
               << "]:" << port.data() << std::endl;
     util::hexdump(stderr, hd->token, hd->tokenlen);
   }
 
-  auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(
-               std::chrono::system_clock::now().time_since_epoch())
-               .count();
+  auto t = util::system_clock_now();
 
-  if (ngtcp2_crypto_verify_retry_token(
-          ocid, hd->token, hd->tokenlen, config.static_secret.data(),
-          config.static_secret.size(), hd->version, sa, salen, &hd->dcid,
-          10 * NGTCP2_SECONDS, t) != 0) {
+  rv = ngtcp2_crypto_verify_retry_token2(
+    ocid, hd->token, hd->tokenlen, config.static_secret.data(),
+    config.static_secret.size(), hd->version, sa, salen, &hd->dcid,
+    10 * NGTCP2_SECONDS, t);
+  switch (rv) {
+  case 0:
+    break;
+  case NGTCP2_CRYPTO_ERR_VERIFY_TOKEN:
     std::cerr << "Could not verify Retry token" << std::endl;
 
     return -1;
+  default:
+    std::cerr << "Could not read Retry token.  Continue without the token"
+              << std::endl;
+
+    return 1;
   }
 
   if (!config.quiet) {
@@ -2294,9 +2278,7 @@ int Server::verify_token(const ngtcp2_pkt_hd *hd, const sockaddr *sa,
     util::hexdump(stderr, hd->token, hd->tokenlen);
   }
 
-  auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(
-               std::chrono::system_clock::now().time_since_epoch())
-               .count();
+  auto t = util::system_clock_now();
 
   if (ngtcp2_crypto_verify_regular_token(hd->token, hd->tokenlen,
                                          config.static_secret.data(),
@@ -2314,18 +2296,19 @@ int Server::verify_token(const ngtcp2_pkt_hd *hd, const sockaddr *sa,
   return 0;
 }
 
-int Server::send_packet(Endpoint &ep, const ngtcp2_addr &local_addr,
+int Server::send_packet(const Endpoint &ep, const ngtcp2_addr &local_addr,
                         const ngtcp2_addr &remote_addr, unsigned int ecn,
                         std::span<const uint8_t> data) {
   auto no_gso = false;
   auto [_, rv] =
-      send_packet(ep, no_gso, local_addr, remote_addr, ecn, data, data.size());
+    send_packet(ep, no_gso, local_addr, remote_addr, ecn, data, data.size());
 
   return rv;
 }
 
 std::pair<std::span<const uint8_t>, int>
-Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
+Server::send_packet(const Endpoint &ep, bool &no_gso,
+                    const ngtcp2_addr &local_addr,
                     const ngtcp2_addr &remote_addr, unsigned int ecn,
                     std::span<const uint8_t> data, size_t gso_size) {
   assert(gso_size);
@@ -2342,7 +2325,7 @@ Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
       auto len = std::min(gso_size, data.size());
 
       auto [_, rv] = send_packet(ep, no_gso, local_addr, remote_addr, ecn,
-                                 {std::begin(data), len}, len);
+                                 data.first(len), len);
       if (rv != 0) {
         return {data, rv};
       }
@@ -2353,23 +2336,22 @@ Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
     return {{}, 0};
   }
 
-  iovec msg_iov;
-  msg_iov.iov_base = const_cast<uint8_t *>(data.data());
-  msg_iov.iov_len = data.size();
-
-  msghdr msg{};
-  msg.msg_name = const_cast<sockaddr *>(remote_addr.addr);
-  msg.msg_namelen = remote_addr.addrlen;
-  msg.msg_iov = &msg_iov;
-  msg.msg_iovlen = 1;
+  iovec msg_iov{
+    .iov_base = const_cast<uint8_t *>(data.data()),
+    .iov_len = data.size(),
+  };
 
   uint8_t msg_ctrl[CMSG_SPACE(sizeof(int)) + CMSG_SPACE(sizeof(uint16_t)) +
-                   CMSG_SPACE(sizeof(in6_pktinfo))];
+                   CMSG_SPACE(sizeof(in6_pktinfo))]{};
 
-  memset(msg_ctrl, 0, sizeof(msg_ctrl));
-
-  msg.msg_control = msg_ctrl;
-  msg.msg_controllen = sizeof(msg_ctrl);
+  msghdr msg{
+    .msg_name = const_cast<sockaddr *>(remote_addr.addr),
+    .msg_namelen = remote_addr.addrlen,
+    .msg_iov = &msg_iov,
+    .msg_iovlen = 1,
+    .msg_control = msg_ctrl,
+    .msg_controllen = sizeof(msg_ctrl),
+  };
 
   size_t controllen = 0;
 
@@ -2381,9 +2363,10 @@ Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
     cm->cmsg_level = IPPROTO_IP;
     cm->cmsg_type = IP_PKTINFO;
     cm->cmsg_len = CMSG_LEN(sizeof(in_pktinfo));
-    in_pktinfo pktinfo{};
     auto addrin = reinterpret_cast<sockaddr_in *>(local_addr.addr);
-    pktinfo.ipi_spec_dst = addrin->sin_addr;
+    in_pktinfo pktinfo{
+      .ipi_spec_dst = addrin->sin_addr,
+    };
     memcpy(CMSG_DATA(cm), &pktinfo, sizeof(pktinfo));
 
     break;
@@ -2393,9 +2376,10 @@ Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
     cm->cmsg_level = IPPROTO_IPV6;
     cm->cmsg_type = IPV6_PKTINFO;
     cm->cmsg_len = CMSG_LEN(sizeof(in6_pktinfo));
-    in6_pktinfo pktinfo{};
     auto addrin = reinterpret_cast<sockaddr_in6 *>(local_addr.addr);
-    pktinfo.ipi6_addr = addrin->sin6_addr;
+    in6_pktinfo pktinfo{
+      .ipi6_addr = addrin->sin6_addr,
+    };
     memcpy(CMSG_DATA(cm), &pktinfo, sizeof(pktinfo));
 
     break;
@@ -2411,10 +2395,10 @@ Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
     cm->cmsg_level = SOL_UDP;
     cm->cmsg_type = UDP_SEGMENT;
     cm->cmsg_len = CMSG_LEN(sizeof(uint16_t));
-    uint16_t n = gso_size;
+    auto n = static_cast<uint16_t>(gso_size);
     memcpy(CMSG_DATA(cm), &n, sizeof(n));
   }
-#endif // UDP_SEGMENT
+#endif // defined(UDP_SEGMENT)
 
   controllen += CMSG_SPACE(sizeof(int));
   cm = CMSG_NXTHDR(&msg, cm);
@@ -2436,7 +2420,13 @@ Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
     assert(0);
   }
 
-  msg.msg_controllen = controllen;
+  msg.msg_controllen =
+#ifndef __APPLE__
+    controllen
+#else  // defined(__APPLE__)
+    static_cast<socklen_t>(controllen)
+#endif // defined(__APPLE__)
+    ;
 
   ssize_t nwrite = 0;
 
@@ -2464,7 +2454,7 @@ Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
                            gso_size);
       }
       break;
-#endif // UDP_SEGMENT
+#endif // defined(UDP_SEGMENT)
     }
 
     std::cerr << "sendmsg: " << strerror(errno) << std::endl;
@@ -2486,12 +2476,10 @@ Server::send_packet(Endpoint &ep, bool &no_gso, const ngtcp2_addr &local_addr,
 }
 
 void Server::associate_cid(const ngtcp2_cid *cid, Handler *h) {
-  handlers_.emplace(util::make_cid_key(cid), h);
+  handlers_.emplace(*cid, h);
 }
 
-void Server::dissociate_cid(const ngtcp2_cid *cid) {
-  handlers_.erase(std::string{util::make_cid_key(cid)});
-}
+void Server::dissociate_cid(const ngtcp2_cid *cid) { handlers_.erase(*cid); }
 
 void Server::remove(const Handler *h) {
   auto conn = h->conn();
@@ -2517,47 +2505,56 @@ void Server::on_stateless_reset_regen() {
 }
 
 namespace {
-int parse_host_port(Address &dest, int af, const char *first,
-                    const char *last) {
-  if (std::distance(first, last) == 0) {
+int parse_host_port(Address &dest, int af, const std::string_view &host_port) {
+  if (host_port.empty()) {
     return -1;
   }
 
-  const char *host_begin, *host_end, *it;
+  auto first = std::ranges::begin(host_port);
+  auto last = std::ranges::end(host_port);
+
+  std::string_view hostv;
+
   if (*first == '[') {
-    host_begin = first + 1;
-    it = std::find(host_begin, last, ']');
+    ++first;
+
+    auto it = std::ranges::find(first, last, ']');
     if (it == last) {
       return -1;
     }
-    host_end = it;
-    ++it;
-    if (it == last || *it != ':') {
+
+    hostv = std::string_view{first, it};
+    first = it + 1;
+
+    if (first == last || *first != ':') {
       return -1;
     }
   } else {
-    host_begin = first;
-    it = std::find(host_begin, last, ':');
+    auto it = std::ranges::find(first, last, ':');
     if (it == last) {
       return -1;
     }
-    host_end = it;
+
+    hostv = std::string_view{first, it};
+    first = it;
   }
 
-  if (++it == last) {
+  if (++first == last) {
     return -1;
   }
-  auto svc_begin = it;
 
   std::array<char, NI_MAXHOST> host;
-  *std::copy(host_begin, host_end, std::begin(host)) = '\0';
+  *std::ranges::copy(hostv, std::ranges::begin(host)).out = '\0';
 
-  addrinfo hints{}, *res;
-  hints.ai_family = af;
-  hints.ai_socktype = SOCK_DGRAM;
+  addrinfo hints{
+    .ai_family = af,
+    .ai_socktype = SOCK_DGRAM,
+  };
+  addrinfo *res;
+  auto svc = first;
 
-  if (auto rv = getaddrinfo(host.data(), svc_begin, &hints, &res); rv != 0) {
-    std::cerr << "getaddrinfo: [" << host.data() << "]:" << svc_begin << ": "
+  if (auto rv = getaddrinfo(host.data(), svc, &hints, &res); rv != 0) {
+    std::cerr << "getaddrinfo: [" << host.data() << "]:" << svc << ": "
               << gai_strerror(rv) << std::endl;
     return -1;
   }
@@ -2586,32 +2583,33 @@ void print_usage() {
 
 namespace {
 void config_set_default(Config &config) {
-  config = Config{};
-  config.tx_loss_prob = 0.;
-  config.rx_loss_prob = 0.;
-  config.ciphers = util::crypto_default_ciphers();
-  config.groups = util::crypto_default_groups();
-  config.timeout = 30 * NGTCP2_SECONDS;
-  {
-    auto path = realpath(".", nullptr);
-    assert(path);
-    config.htdocs = path;
-    free(path);
-  }
-  config.mime_types_file = "/etc/mime.types"sv;
-  config.max_data = 1_m;
-  config.max_stream_data_bidi_remote = 256_k;
-  config.max_stream_data_uni = 256_k;
-  config.max_window = 6_m;
-  config.max_stream_window = 6_m;
-  config.max_streams_bidi = 100;
-  config.max_streams_uni = 3;
-  config.max_dyn_length = 20_m;
-  config.cc_algo = NGTCP2_CC_ALGO_CUBIC;
-  config.initial_rtt = NGTCP2_DEFAULT_INITIAL_RTT;
-  config.handshake_timeout = UINT64_MAX;
-  config.ack_thresh = 2;
-  config.initial_pkt_num = UINT32_MAX;
+  auto path = realpath(".", nullptr);
+  assert(path);
+  auto htdocs = std::string(path);
+  free(path);
+
+  config = Config{
+    .tx_loss_prob = 0.,
+    .rx_loss_prob = 0.,
+    .ciphers = util::crypto_default_ciphers(),
+    .groups = util::crypto_default_groups(),
+    .htdocs = std::move(htdocs),
+    .mime_types_file = "/etc/mime.types"sv,
+    .timeout = 30 * NGTCP2_SECONDS,
+    .max_data = 1_m,
+    .max_stream_data_bidi_remote = 256_k,
+    .max_stream_data_uni = 256_k,
+    .max_streams_bidi = 100,
+    .max_streams_uni = 3,
+    .max_window = 6_m,
+    .max_stream_window = 6_m,
+    .max_dyn_length = 20_m,
+    .cc_algo = NGTCP2_CC_ALGO_CUBIC,
+    .initial_rtt = NGTCP2_DEFAULT_INITIAL_RTT,
+    .handshake_timeout = UINT64_MAX,
+    .ack_thresh = 2,
+    .initial_pkt_num = UINT32_MAX,
+  };
 }
 } // namespace
 
@@ -2777,6 +2775,16 @@ Options:
   --pmtud-probes=<SIZE>[[,<SIZE>]...]
               Specify UDP datagram payload sizes  to probe in Path MTU
               Discovery.  <SIZE> must be strictly larger than 1200.
+  --ech-config-file=<PATH>
+              Read private  key and  ECHConfig from <PATH>.   The file
+              denoted by <PATH> must contain private key and ECHConfig
+              as                      described                     in
+              https://datatracker.ietf.org/doc/html/draft-farrell-tls-pemesni.
+              ECH configuration  is only applied if  an underlying TLS
+              stack supports it.
+  --no-gso    Disables GSO.
+  --show-stat Print the connection statistics when the connection is
+              closed.
   -h, --help  Display this help and exit.
 
 ---
@@ -2805,48 +2813,54 @@ int main(int argc, char **argv) {
     prog = basename(argv[0]);
   }
 
+  std::string_view ech_config_file;
+
   for (;;) {
     static int flag = 0;
     constexpr static option long_opts[] = {
-        {"help", no_argument, nullptr, 'h'},
-        {"tx-loss", required_argument, nullptr, 't'},
-        {"rx-loss", required_argument, nullptr, 'r'},
-        {"htdocs", required_argument, nullptr, 'd'},
-        {"quiet", no_argument, nullptr, 'q'},
-        {"show-secret", no_argument, nullptr, 's'},
-        {"validate-addr", no_argument, nullptr, 'V'},
-        {"ciphers", required_argument, &flag, 1},
-        {"groups", required_argument, &flag, 2},
-        {"timeout", required_argument, &flag, 3},
-        {"preferred-ipv4-addr", required_argument, &flag, 4},
-        {"preferred-ipv6-addr", required_argument, &flag, 5},
-        {"mime-types-file", required_argument, &flag, 6},
-        {"early-response", no_argument, &flag, 7},
-        {"verify-client", no_argument, &flag, 8},
-        {"qlog-dir", required_argument, &flag, 9},
-        {"no-quic-dump", no_argument, &flag, 10},
-        {"no-http-dump", no_argument, &flag, 11},
-        {"max-data", required_argument, &flag, 12},
-        {"max-stream-data-bidi-local", required_argument, &flag, 13},
-        {"max-stream-data-bidi-remote", required_argument, &flag, 14},
-        {"max-stream-data-uni", required_argument, &flag, 15},
-        {"max-streams-bidi", required_argument, &flag, 16},
-        {"max-streams-uni", required_argument, &flag, 17},
-        {"max-dyn-length", required_argument, &flag, 18},
-        {"cc", required_argument, &flag, 19},
-        {"initial-rtt", required_argument, &flag, 20},
-        {"max-udp-payload-size", required_argument, &flag, 21},
-        {"send-trailers", no_argument, &flag, 22},
-        {"max-window", required_argument, &flag, 23},
-        {"max-stream-window", required_argument, &flag, 24},
-        {"handshake-timeout", required_argument, &flag, 26},
-        {"preferred-versions", required_argument, &flag, 27},
-        {"available-versions", required_argument, &flag, 28},
-        {"no-pmtud", no_argument, &flag, 29},
-        {"ack-thresh", required_argument, &flag, 30},
-        {"initial-pkt-num", required_argument, &flag, 31},
-        {"pmtud-probes", required_argument, &flag, 32},
-        {nullptr, 0, nullptr, 0}};
+      {"help", no_argument, nullptr, 'h'},
+      {"tx-loss", required_argument, nullptr, 't'},
+      {"rx-loss", required_argument, nullptr, 'r'},
+      {"htdocs", required_argument, nullptr, 'd'},
+      {"quiet", no_argument, nullptr, 'q'},
+      {"show-secret", no_argument, nullptr, 's'},
+      {"validate-addr", no_argument, nullptr, 'V'},
+      {"ciphers", required_argument, &flag, 1},
+      {"groups", required_argument, &flag, 2},
+      {"timeout", required_argument, &flag, 3},
+      {"preferred-ipv4-addr", required_argument, &flag, 4},
+      {"preferred-ipv6-addr", required_argument, &flag, 5},
+      {"mime-types-file", required_argument, &flag, 6},
+      {"early-response", no_argument, &flag, 7},
+      {"verify-client", no_argument, &flag, 8},
+      {"qlog-dir", required_argument, &flag, 9},
+      {"no-quic-dump", no_argument, &flag, 10},
+      {"no-http-dump", no_argument, &flag, 11},
+      {"max-data", required_argument, &flag, 12},
+      {"max-stream-data-bidi-local", required_argument, &flag, 13},
+      {"max-stream-data-bidi-remote", required_argument, &flag, 14},
+      {"max-stream-data-uni", required_argument, &flag, 15},
+      {"max-streams-bidi", required_argument, &flag, 16},
+      {"max-streams-uni", required_argument, &flag, 17},
+      {"max-dyn-length", required_argument, &flag, 18},
+      {"cc", required_argument, &flag, 19},
+      {"initial-rtt", required_argument, &flag, 20},
+      {"max-udp-payload-size", required_argument, &flag, 21},
+      {"send-trailers", no_argument, &flag, 22},
+      {"max-window", required_argument, &flag, 23},
+      {"max-stream-window", required_argument, &flag, 24},
+      {"handshake-timeout", required_argument, &flag, 26},
+      {"preferred-versions", required_argument, &flag, 27},
+      {"available-versions", required_argument, &flag, 28},
+      {"no-pmtud", no_argument, &flag, 29},
+      {"ack-thresh", required_argument, &flag, 30},
+      {"initial-pkt-num", required_argument, &flag, 31},
+      {"pmtud-probes", required_argument, &flag, 32},
+      {"ech-config-file", required_argument, &flag, 33},
+      {"no-gso", no_argument, &flag, 35},
+      {"show-stat", no_argument, &flag, 36},
+      {},
+    };
 
     auto optidx = 0;
     auto c = getopt_long(argc, argv, "d:hqr:st:V", long_opts, &optidx);
@@ -2896,6 +2910,10 @@ int main(int argc, char **argv) {
       switch (flag) {
       case 1:
         // --ciphers
+        if (util::crypto_default_ciphers()[0] == '\0') {
+          std::cerr << "ciphers: not supported" << std::endl;
+          exit(EXIT_FAILURE);
+        }
         config.ciphers = optarg;
         break;
       case 2:
@@ -2913,8 +2931,7 @@ int main(int argc, char **argv) {
         break;
       case 4:
         // --preferred-ipv4-addr
-        if (parse_host_port(config.preferred_ipv4_addr, AF_INET, optarg,
-                            optarg + strlen(optarg)) != 0) {
+        if (parse_host_port(config.preferred_ipv4_addr, AF_INET, optarg) != 0) {
           std::cerr << "preferred-ipv4-addr: could not use "
                     << std::quoted(optarg) << std::endl;
           exit(EXIT_FAILURE);
@@ -2922,8 +2939,8 @@ int main(int argc, char **argv) {
         break;
       case 5:
         // --preferred-ipv6-addr
-        if (parse_host_port(config.preferred_ipv6_addr, AF_INET6, optarg,
-                            optarg + strlen(optarg)) != 0) {
+        if (parse_host_port(config.preferred_ipv6_addr, AF_INET6, optarg) !=
+            0) {
           std::cerr << "preferred-ipv6-addr: could not use "
                     << std::quoted(optarg) << std::endl;
           exit(EXIT_FAILURE);
@@ -3095,7 +3112,7 @@ int main(int argc, char **argv) {
                     << max_preferred_versionslen << std::endl;
         }
         config.preferred_versions.resize(l.size());
-        auto it = std::begin(config.preferred_versions);
+        auto it = std::ranges::begin(config.preferred_versions);
         for (const auto &k : l) {
           if (k == "v1"sv) {
             *it++ = NGTCP2_PROTO_VER_V1;
@@ -3124,7 +3141,7 @@ int main(int argc, char **argv) {
         // --available-versions
         auto l = util::split_str(optarg);
         config.available_versions.resize(l.size());
-        auto it = std::begin(config.available_versions);
+        auto it = std::ranges::begin(config.available_versions);
         for (const auto &k : l) {
           if (k == "v1"sv) {
             *it++ = NGTCP2_PROTO_VER_V1;
@@ -3173,7 +3190,7 @@ int main(int argc, char **argv) {
           config.initial_pkt_num = static_cast<uint32_t>(*n);
         }
         break;
-      case 32:
+      case 32: {
         // --pmtud-probes
         auto l = util::split_str(optarg);
         for (auto &s : l) {
@@ -3182,13 +3199,26 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
           } else if (*n <= 1200 || *n >= 64_k) {
             std::cerr
-                << "pmtud-probes: must be in range [1201, 65535], inclusive."
-                << std::endl;
+              << "pmtud-probes: must be in range [1201, 65535], inclusive."
+              << std::endl;
             exit(EXIT_FAILURE);
           } else {
-            config.pmtud_probes.push_back(*n);
+            config.pmtud_probes.push_back(static_cast<uint16_t>(*n));
           }
         }
+        break;
+      }
+      case 33:
+        // --ech-config-file
+        ech_config_file = optarg;
+        break;
+      case 35:
+        // --no-gso
+        config.no_gso = true;
+        break;
+      case 36:
+        // --show-stat
+        config.show_stat = true;
         break;
       }
       break;
@@ -3215,7 +3245,7 @@ int main(int argc, char **argv) {
     std::cerr << "port: must not exceed 65535" << std::endl;
     exit(EXIT_FAILURE);
   } else {
-    config.port = *n;
+    config.port = static_cast<uint16_t>(*n);
   }
 
   if (auto mt = util::read_mime_types(config.mime_types_file); !mt) {
@@ -3223,6 +3253,17 @@ int main(int argc, char **argv) {
               << std::quoted(config.mime_types_file) << std::endl;
   } else {
     config.mime_types = std::move(*mt);
+  }
+
+  if (!ech_config_file.empty()) {
+    auto ech_config = util::read_ech_server_config(ech_config_file);
+    if (!ech_config) {
+      std::cerr << "ech-config-file: Could not read private key and ECHConfig"
+                << std::endl;
+      exit(EXIT_FAILURE);
+    }
+
+    config.ech_config = std::move(*ech_config);
   }
 
   TLSServerContext tls_ctx;

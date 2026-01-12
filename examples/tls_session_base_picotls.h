@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif // HAVE_CONFIG_H
+#endif // defined(HAVE_CONFIG_H)
 
 #include <string>
 #include <string_view>
@@ -51,10 +51,10 @@ public:
   }
   std::string get_selected_alpn() const;
   // TODO make keylog work with picotls
-  void enable_keylog(){};
+  void enable_keylog() {}
 
 protected:
   ngtcp2_crypto_picotls_ctx cptls_;
 };
 
-#endif // TLS_SESSION_BASE_PICOTLS_H
+#endif // !defined(TLS_SESSION_BASE_PICOTLS_H)

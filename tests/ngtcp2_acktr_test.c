@@ -30,15 +30,18 @@
 #include "ngtcp2_test_helper.h"
 
 static const MunitTest tests[] = {
-    munit_void_test(test_ngtcp2_acktr_add),
-    munit_void_test(test_ngtcp2_acktr_eviction),
-    munit_void_test(test_ngtcp2_acktr_forget),
-    munit_void_test(test_ngtcp2_acktr_recv_ack),
-    munit_test_end(),
+  munit_void_test(test_ngtcp2_acktr_add),
+  munit_void_test(test_ngtcp2_acktr_eviction),
+  munit_void_test(test_ngtcp2_acktr_forget),
+  munit_void_test(test_ngtcp2_acktr_recv_ack),
+  munit_void_test(test_ngtcp2_acktr_create_ack_frame),
+  munit_void_test(test_ngtcp2_acktr_free),
+  munit_test_end(),
 };
 
 const MunitSuite acktr_suite = {
-    "/acktr", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE,
+  .prefix = "/acktr",
+  .tests = tests,
 };
 
 void test_ngtcp2_acktr_add(void) {
@@ -313,9 +316,10 @@ void test_ngtcp2_acktr_recv_ack(void) {
   ngtcp2_acktr acktr;
   const ngtcp2_mem *mem = ngtcp2_mem_default();
   size_t i;
-  ngtcp2_ack ackfr;
+  ngtcp2_max_frame mfr;
+  ngtcp2_ack *ackfr = &mfr.fr.ack;
   int64_t rpkt_nums[] = {
-      4500, 4499, 4497, 4496, 4494, 4493, 4491, 4490, 4488, 4487, 4483,
+    4500, 4499, 4497, 4496, 4494, 4493, 4491, 4490, 4488, 4487, 4483,
   };
   /*
      4500 4499
@@ -341,13 +345,12 @@ void test_ngtcp2_acktr_recv_ack(void) {
   ngtcp2_acktr_add_ack(&acktr, 998, 4497);
   ngtcp2_acktr_add_ack(&acktr, 999, 4499);
 
-  ackfr.type = NGTCP2_FRAME_ACK;
-  ackfr.largest_ack = 998;
-  ackfr.ack_delay = 0;
-  ackfr.first_ack_range = 0;
-  ackfr.rangecnt = 0;
+  *ackfr = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK,
+    .largest_ack = 998,
+  };
 
-  ngtcp2_acktr_recv_ack(&acktr, &ackfr);
+  ngtcp2_acktr_recv_ack(&acktr, ackfr);
 
   assert_size(1, ==, ngtcp2_ringbuf_len(&acktr.acks.rb));
   assert_size(1, ==, ngtcp2_ksl_len(&acktr.ents));
@@ -358,13 +361,12 @@ void test_ngtcp2_acktr_recv_ack(void) {
   assert_int64(4500, ==, ent->pkt_num);
   assert_size(2, ==, ent->len);
 
-  ackfr.type = NGTCP2_FRAME_ACK;
-  ackfr.largest_ack = 999;
-  ackfr.ack_delay = 0;
-  ackfr.first_ack_range = 0;
-  ackfr.rangecnt = 0;
+  *ackfr = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK,
+    .largest_ack = 999,
+  };
 
-  ngtcp2_acktr_recv_ack(&acktr, &ackfr);
+  ngtcp2_acktr_recv_ack(&acktr, ackfr);
 
   assert_size(0, ==, ngtcp2_ringbuf_len(&acktr.acks.rb));
   assert_size(1, ==, ngtcp2_ksl_len(&acktr.ents));
@@ -376,4 +378,194 @@ void test_ngtcp2_acktr_recv_ack(void) {
   assert_size(1, ==, ent->len);
 
   ngtcp2_acktr_free(&acktr);
+
+  /* Multiple ack ranges */
+  ngtcp2_acktr_init(&acktr, &log, mem);
+
+  /* [0, 2, 4, 6, 8] */
+  for (i = 0; i < 5; ++i) {
+    ngtcp2_acktr_add(&acktr, (int64_t)i * 2, 0, 0);
+  }
+
+  ngtcp2_acktr_add_ack(&acktr, 999, 4);
+  ngtcp2_acktr_add_ack(&acktr, 1004, 8);
+  ngtcp2_acktr_add_ack(&acktr, 1006, 8);
+
+  *ackfr = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK,
+    .largest_ack = 1005,
+    .rangecnt = 3,
+  };
+  /* [1003] */
+  /* [1000, 999] */
+  ackfr->ranges[1] = (ngtcp2_ack_range){
+    .gap = 1,
+    .len = 1,
+  };
+  /* [995] */
+  ackfr->ranges[2] = (ngtcp2_ack_range){
+    .gap = 2,
+  };
+
+  ngtcp2_acktr_recv_ack(&acktr, &mfr.fr.ack);
+
+  assert_size(2, ==, ngtcp2_ringbuf_len(&acktr.acks.rb));
+  assert_size(2, ==, ngtcp2_ksl_len(&acktr.ents));
+
+  it = ngtcp2_ksl_begin(&acktr.ents);
+  ent = ngtcp2_ksl_it_get(&it);
+
+  assert_int64(8, ==, ent->pkt_num);
+
+  ngtcp2_ksl_it_next(&it);
+  ent = ngtcp2_ksl_it_get(&it);
+
+  assert_int64(6, ==, ent->pkt_num);
+
+  /* Doing it again does not change the state */
+  ngtcp2_acktr_recv_ack(&acktr, &mfr.fr.ack);
+
+  assert_size(2, ==, ngtcp2_ringbuf_len(&acktr.acks.rb));
+  assert_size(2, ==, ngtcp2_ksl_len(&acktr.ents));
+
+  ngtcp2_acktr_free(&acktr);
 }
+
+void test_ngtcp2_acktr_create_ack_frame(void) {
+  const ngtcp2_mem *mem = ngtcp2_mem_default();
+  ngtcp2_log log;
+  ngtcp2_acktr acktr;
+  ngtcp2_max_frame mfr;
+  ngtcp2_frame *fr;
+  ngtcp2_pkt_info pi = {0};
+  size_t i;
+
+  ngtcp2_log_init(&log, NULL, NULL, 0, NULL);
+
+  /* Nothing to acknowledge */
+  ngtcp2_acktr_init(&acktr, &log, mem);
+
+  ngtcp2_acktr_add(&acktr, 0, 1, 0);
+  ngtcp2_acktr_add_ack(&acktr, 1000, 0);
+
+  mfr.fr.ack = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK,
+    .largest_ack = 1000,
+  };
+
+  ngtcp2_acktr_recv_ack(&acktr, &mfr.fr.ack);
+
+  assert_uint64(0, ==, acktr.first_unacked_ts);
+  assert_null(
+    ngtcp2_acktr_create_ack_frame(&acktr, &mfr.fr, NGTCP2_PKT_1RTT, 0, 0, 0));
+  assert_uint64(UINT64_MAX, ==, acktr.first_unacked_ts);
+
+  ngtcp2_acktr_free(&acktr);
+
+  /* With ECN counts */
+  ngtcp2_acktr_init(&acktr, &log, mem);
+
+  ngtcp2_acktr_add(&acktr, 1000000007, 1, 5 * NGTCP2_MILLISECONDS);
+
+  pi.ecn = NGTCP2_ECN_ECT_0;
+
+  ngtcp2_acktr_increase_ecn_counts(&acktr, &pi);
+
+  pi.ecn = NGTCP2_ECN_ECT_1;
+
+  ngtcp2_acktr_increase_ecn_counts(&acktr, &pi);
+  ngtcp2_acktr_increase_ecn_counts(&acktr, &pi);
+
+  pi.ecn = NGTCP2_ECN_CE;
+
+  ngtcp2_acktr_increase_ecn_counts(&acktr, &pi);
+  ngtcp2_acktr_increase_ecn_counts(&acktr, &pi);
+  ngtcp2_acktr_increase_ecn_counts(&acktr, &pi);
+
+  fr = ngtcp2_acktr_create_ack_frame(&acktr, &mfr.fr, NGTCP2_PKT_1RTT,
+                                     30 * NGTCP2_MILLISECONDS,
+                                     25 * NGTCP2_MILLISECONDS, 2);
+
+  assert_not_null(fr);
+  assert_uint64(NGTCP2_FRAME_ACK_ECN, ==, fr->type);
+  assert_uint64(1, ==, fr->ack.ecn.ect0);
+  assert_uint64(2, ==, fr->ack.ecn.ect1);
+  assert_uint64(3, ==, fr->ack.ecn.ce);
+  assert_int64(1000000007, ==, fr->ack.largest_ack);
+  assert_uint64(0, ==, fr->ack.first_ack_range);
+  assert_size(0, ==, fr->ack.rangecnt);
+  assert_uint64(6250, ==, fr->ack.ack_delay);
+
+  ngtcp2_acktr_free(&acktr);
+
+  /* Remove extraneous entries */
+  ngtcp2_acktr_init(&acktr, &log, mem);
+
+  for (i = 0; i < NGTCP2_MAX_ACK_RANGES + 2; ++i) {
+    ngtcp2_acktr_add(&acktr, (int64_t)i * 2, 1, 0);
+  }
+
+  assert_size(NGTCP2_ACKTR_MAX_ENT, ==, ngtcp2_ksl_len(&acktr.ents));
+
+  fr = ngtcp2_acktr_create_ack_frame(&acktr, &mfr.fr, NGTCP2_PKT_1RTT,
+                                     30 * NGTCP2_MILLISECONDS,
+                                     30 * NGTCP2_MILLISECONDS, 0);
+
+  assert_not_null(fr);
+  assert_int64(2 * (NGTCP2_MAX_ACK_RANGES + 1), ==, fr->ack.largest_ack);
+  assert_uint64(0, ==, fr->ack.first_ack_range);
+  assert_size(NGTCP2_MAX_ACK_RANGES, ==, fr->ack.rangecnt);
+  assert_size(NGTCP2_MAX_ACK_RANGES + 1, ==, ngtcp2_ksl_len(&acktr.ents));
+
+  ngtcp2_acktr_free(&acktr);
+
+  /* Acknowledging packet whose packet number is less than largest
+     packet number by 1. */
+  ngtcp2_acktr_init(&acktr, &log, mem);
+
+  for (i = 0; i < NGTCP2_MAX_ACK_RANGES + 2; ++i) {
+    ngtcp2_acktr_add(&acktr, (int64_t)i * 2, 1, 0);
+  }
+
+  ++acktr.max_pkt_num;
+
+  assert_size(NGTCP2_ACKTR_MAX_ENT, ==, ngtcp2_ksl_len(&acktr.ents));
+
+  fr = ngtcp2_acktr_create_ack_frame(&acktr, &mfr.fr, NGTCP2_PKT_1RTT,
+                                     30 * NGTCP2_MILLISECONDS,
+                                     30 * NGTCP2_MILLISECONDS, 0);
+
+  assert_not_null(fr);
+  assert_int64(2 * (NGTCP2_MAX_ACK_RANGES + 1) + 1, ==, fr->ack.largest_ack);
+  assert_uint64(1, ==, fr->ack.first_ack_range);
+  assert_size(NGTCP2_MAX_ACK_RANGES, ==, fr->ack.rangecnt);
+  assert_size(NGTCP2_MAX_ACK_RANGES + 1, ==, ngtcp2_ksl_len(&acktr.ents));
+
+  ngtcp2_acktr_free(&acktr);
+
+  /* Acknowledging packet whose packet number is less than largest
+     packet number by 2. */
+  ngtcp2_acktr_init(&acktr, &log, mem);
+
+  for (i = 0; i < NGTCP2_MAX_ACK_RANGES + 2; ++i) {
+    ngtcp2_acktr_add(&acktr, (int64_t)i * 2, 1, 0);
+  }
+
+  acktr.max_pkt_num += 2;
+
+  assert_size(NGTCP2_ACKTR_MAX_ENT, ==, ngtcp2_ksl_len(&acktr.ents));
+
+  fr = ngtcp2_acktr_create_ack_frame(&acktr, &mfr.fr, NGTCP2_PKT_1RTT,
+                                     30 * NGTCP2_MILLISECONDS,
+                                     30 * NGTCP2_MILLISECONDS, 0);
+
+  assert_not_null(fr);
+  assert_int64(2 * (NGTCP2_MAX_ACK_RANGES + 1) + 2, ==, fr->ack.largest_ack);
+  assert_uint64(0, ==, fr->ack.first_ack_range);
+  assert_size(NGTCP2_MAX_ACK_RANGES, ==, fr->ack.rangecnt);
+  assert_size(NGTCP2_MAX_ACK_RANGES + 1, ==, ngtcp2_ksl_len(&acktr.ents));
+
+  ngtcp2_acktr_free(&acktr);
+}
+
+void test_ngtcp2_acktr_free(void) { ngtcp2_acktr_free(NULL); }

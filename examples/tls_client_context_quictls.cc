@@ -133,7 +133,7 @@ int TLSClientContext::init(const char *private_key_file,
 
   if (config.session_file) {
     SSL_CTX_set_session_cache_mode(ssl_ctx_, SSL_SESS_CACHE_CLIENT |
-                                                 SSL_SESS_CACHE_NO_INTERNAL);
+                                               SSL_SESS_CACHE_NO_INTERNAL);
     SSL_CTX_sess_set_new_cb(ssl_ctx_, new_session_cb);
   }
 
@@ -144,7 +144,7 @@ extern std::ofstream keylog_file;
 
 namespace {
 void keylog_callback(const SSL *ssl, const char *line) {
-  keylog_file.write(line, strlen(line));
+  keylog_file.write(line, static_cast<std::streamsize>(strlen(line)));
   keylog_file.put('\n');
   keylog_file.flush();
 }

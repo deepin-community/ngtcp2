@@ -1,14 +1,103 @@
+ngtcp2 (1.16.0-1) unstable; urgency=medium
+
+  * d/control: Make conflicts/replaces bpo-friendly (Closes: #1116529).
+  * d/NEWS: Correcting typo.
+
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Thu, 02 Oct 2025 17:00:03 +0200
+
+ngtcp2 (1.16.0-1~exp1) experimental; urgency=medium
+
+  * d/gbp.conf: Configure pristine-tar defaults.
+  * d/gbp.conf: upstream-branch.
+  * New upstream version 1.16.0
+  * Removing ngtcp2-server and ngtcp2-client example binary packages.
+    - Maintaining example binaries with additional TLS backend does
+      not scale anymore.
+    - d/control:
+      ~ Removing ngtcp2-server and ngtcp2-client sections.
+      ~ Updating Build-Depends.
+    - d/ngtcp2-client.install: Removing file.
+    - d/ngtcp2-server.install: Removing file.
+    - d/ngtcp2-server.ngtcp2d.service: Removing systemd service file.
+    - d/rules: Removing entries regarding example binary packages.
+    - d/NEWS: Add to inform users about this change.
+  * Provide additional crypto helper library with OpenSSL (Closes: #1115606).
+    - d/rules: Add OpenSSL configure option.
+    - d/control: Update Build-Depends for OpenSSL crypto helper library.
+    - d/control: Adding binary package libngtcp2-crypto-ossl0.
+    - d/control: Adding binary package libngtcp2-crypto-ossl-dev.
+    - d/libngtcp2-crypto-gnutls8.install: Select files more accurate
+      to support other crypto helper libraries.
+    - d/libngtcp2-crypto-gnutls-dev.install: Select files more accurate
+      to support other crypto helper development packages.
+    - Adding: d/libngtcp2-crypto-ossl0.install.
+    - Adding: d/libngtcp2-crypto-ossl-dev.install.
+    - Move header file to the correct -dev package.
+      ~ d/control: Add Breaks/Replaces to libngtcp2-dev for
+      libngtcp2-crypto-gnutls-dev.
+      ~ d/libngtcp2-dev.install: Include header file in this package.
+  * d/control: Update short and long descriptions.
+  * d/libngtcp2-crypto-ossl0.symbols: Add new symbol file.
+  * Reformat d/ files with wrap-and-sort -bast.
+  * d/copyright: Updating authors and years.
+  * Update maintainer contact information.
+  * d/rules: Not installing README.rst yet.
+  * d/libngtcp2-16.symbols: New symbol ngtcp2_conn_get_timestamp@Base.
+
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Thu, 25 Sep 2025 07:40:56 +0200
+
+ngtcp2 (1.15.1-1) unstable; urgency=medium
+
+  * Team upload
+  * New upstream version 1.15.1
+  * d/control: Bump B-D libnghttp3-dev to 1.11.0
+  * d/libngtcp2-16.symbols: New symbol
+    ngtcp2_conn_write_aggregate_pkt_versioned@Base
+
+ -- Samuel Henrique <samueloph@debian.org>  Fri, 05 Sep 2025 19:04:27 +0100
+
+ngtcp2 (1.12.0-1~exp1) experimental; urgency=medium
+
+  * Team upload
+  * New upstream version 1.12.0
+
+ -- Samuel Henrique <samueloph@debian.org>  Wed, 16 Apr 2025 22:07:07 +0100
+
+ngtcp2 (1.11.0-1) unstable; urgency=medium
+
+  [ Matheus Polkorny ]
+  * d/upstream/signing-key.asc: Upstream public key.
+  * d/watch: Add debian/watch file.
+
+  [ Sakirnth Nagarasa ]
+  * New upstream version 1.11.0.
+  * d/gbp.conf: Adding debian/unstable as default branch.
+  * d/control: Updating Standards-Version.
+  * d/control: Updating Vsc path.
+  * d/copyright: Updating years and authors for debian/*.
+
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Sat, 01 Mar 2025 14:51:39 +0100
+
+ngtcp2 (1.9.1-1) sid; urgency=medium
+
+  * New upstream version 1.9.1.
+    - Fix CVE-2024-52811 qlog buffer overflow.
+  * d/libngtcp2-crypto-gnutls8.symbols: Adding new symbols.
+  * d/copyright: Updating authors.
+
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Tue, 26 Nov 2024 17:35:47 +0100
+
 ngtcp2 (1.6.0-1) sid; urgency=medium
 
   * New upstream version 1.6.0.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Thu, 25 Jul 2024 11:55:21 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Thu, 25 Jul 2024 11:55:21 +0200
 
 ngtcp2 (1.5.0-2) sid; urgency=medium
 
   * Uploading to sid.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Fri, 28 Jun 2024 17:46:38 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Fri, 28 Jun 2024 17:46:38 +0200
 
 ngtcp2 (1.5.0-1) experimental; urgency=medium
 
@@ -18,7 +107,7 @@ ngtcp2 (1.5.0-1) experimental; urgency=medium
     - Changed Build-Depends from pkg-config to pkgconf.
     - Added Debian Curl Maintainers as Maintainer.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Sun, 12 May 2024 20:03:53 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Sun, 12 May 2024 20:03:53 +0200
 
 ngtcp2 (1.1.0-1) experimental; urgency=medium
 
@@ -38,7 +127,7 @@ ngtcp2 (1.1.0-1) experimental; urgency=medium
   * Removed d/README.source because js-minfied code was removed.
   * d/copyright: Adding copyright changes and update year from d/*.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Mon, 08 Jan 2024 16:34:04 +0100
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Mon, 08 Jan 2024 16:34:04 +0100
 
 ngtcp2 (0.19.1-1) experimental; urgency=medium
 
@@ -54,7 +143,7 @@ ngtcp2 (0.19.1-1) experimental; urgency=medium
   * Added d/libngtcp2-15.symbols and d/libngtcp2-crypto-gnutls7.symbols.
   * d/copyright: Remove Files-Excluded because js-minfied code was removed.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Fri, 08 Sep 2023 13:37:28 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Fri, 08 Sep 2023 13:37:28 +0200
 
 ngtcp2 (0.12.1+dfsg-1) sid; urgency=medium
 
@@ -63,7 +152,7 @@ ngtcp2 (0.12.1+dfsg-1) sid; urgency=medium
   * d/changelog: Updating entry 0.12.0+dfsg-1 (Standards-Version).
   * Source-only upload to allow testing migration.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Fri, 06 Jan 2023 21:07:55 +0100
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Fri, 06 Jan 2023 21:07:55 +0100
 
 ngtcp2 (0.12.0+dfsg-1) experimental; urgency=medium
 
@@ -77,14 +166,14 @@ ngtcp2 (0.12.0+dfsg-1) experimental; urgency=medium
   * Removed d/libngtcp2-7.symbols.
   * Added d/libngtcp2-9.symbols.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Sun, 01 Jan 2023 20:58:42 +0100
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Sun, 01 Jan 2023 20:58:42 +0100
 
 ngtcp2 (0.8.0+dfsg-2) sid; urgency=medium
 
   * Uploading to sid.
   * Source-only upload to allow testing migration.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Wed, 14 Sep 2022 19:11:54 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Wed, 14 Sep 2022 19:11:54 +0200
 
 ngtcp2 (0.8.0+dfsg-1) experimental; urgency=medium
 
@@ -100,7 +189,7 @@ ngtcp2 (0.8.0+dfsg-1) experimental; urgency=medium
   * Added d/libngtcp2-7.symbols and d/libngtcp2-crypto-gnutls2.symbols.
   * d/copyright: Updated copyright for this version.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Sat, 27 Aug 2022 20:19:16 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Sat, 27 Aug 2022 20:19:16 +0200
 
 ngtcp2 (0.2.1+dfsg-3) sid; urgency=medium
 
@@ -108,14 +197,14 @@ ngtcp2 (0.2.1+dfsg-3) sid; urgency=medium
   * Add d/libngtcp2-crypto-gnutls1.symbols file.
   * Add d/README.source to document the reason for dfsg compatible source.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Tue, 21 Jun 2022 14:26:22 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Tue, 21 Jun 2022 14:26:22 +0200
 
 ngtcp2 (0.2.1+dfsg-2) sid; urgency=medium
 
   * Uploading to sid.
   * d/control: Updating Standards-Version.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Mon, 16 May 2022 11:31:37 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Mon, 16 May 2022 11:31:37 +0200
 
 ngtcp2 (0.2.1+dfsg-1) experimental; urgency=medium
 
@@ -127,7 +216,7 @@ ngtcp2 (0.2.1+dfsg-1) experimental; urgency=medium
     - Updating Build-Depends and Depends because of soname bump.
   * d/copyright: Updating copyright for this version.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Mon, 28 Mar 2022 11:41:58 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Mon, 28 Mar 2022 11:41:58 +0200
 
 ngtcp2 (0.1.0+dfsg-1) sid; urgency=medium
 
@@ -140,10 +229,10 @@ ngtcp2 (0.1.0+dfsg-1) sid; urgency=medium
   * d/control: Updating libnghttp3-dev Build-Depends version.
   * d/rules: Changing override_dh_install to execute_before_dh_install.
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Thu, 10 Feb 2022 12:47:32 +0100
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Thu, 10 Feb 2022 12:47:32 +0100
 
 ngtcp2 (0~20210905-1) sid; urgency=medium
 
   * Initial release (Closes: #932151).
 
- -- Sakirnth Nagarasa <sakirnth@gmail.com>  Mon, 06 Sep 2021 09:38:53 +0200
+ -- Sakirnth Nagarasa <sakirnth@debian.org>  Mon, 06 Sep 2021 09:38:53 +0200

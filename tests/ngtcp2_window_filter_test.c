@@ -31,12 +31,13 @@
 #include "ngtcp2_test_helper.h"
 
 static const MunitTest tests[] = {
-    munit_void_test(test_ngtcp2_window_filter_update),
-    munit_test_end(),
+  munit_void_test(test_ngtcp2_window_filter_update),
+  munit_test_end(),
 };
 
 const MunitSuite window_filter_suite = {
-    "/window_filter", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE,
+  .prefix = "/window_filter",
+  .tests = tests,
 };
 
 void test_ngtcp2_window_filter_update(void) {

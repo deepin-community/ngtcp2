@@ -104,11 +104,13 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_OPENSSL_TRUE@am__append_1 = ngtcp2/ngtcp2_crypto_quictls.h
-@HAVE_GNUTLS_TRUE@am__append_2 = ngtcp2/ngtcp2_crypto_gnutls.h
-@HAVE_BORINGSSL_TRUE@am__append_3 = ngtcp2/ngtcp2_crypto_boringssl.h
-@HAVE_PICOTLS_TRUE@am__append_4 = ngtcp2/ngtcp2_crypto_picotls.h
-@HAVE_WOLFSSL_TRUE@am__append_5 = ngtcp2/ngtcp2_crypto_wolfssl.h
+@HAVE_QUICTLS_TRUE@am__append_1 = ngtcp2/ngtcp2_crypto_quictls.h
+@HAVE_LIBRESSL_TRUE@am__append_2 = ngtcp2/ngtcp2_crypto_quictls.h
+@HAVE_GNUTLS_TRUE@am__append_3 = ngtcp2/ngtcp2_crypto_gnutls.h
+@HAVE_BORINGSSL_TRUE@am__append_4 = ngtcp2/ngtcp2_crypto_boringssl.h
+@HAVE_PICOTLS_TRUE@am__append_5 = ngtcp2/ngtcp2_crypto_picotls.h
+@HAVE_WOLFSSL_TRUE@am__append_6 = ngtcp2/ngtcp2_crypto_wolfssl.h
+@HAVE_OSSL_TRUE@am__append_7 = ngtcp2/ngtcp2_crypto_ossl.h
 subdir = crypto/includes
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -146,7 +148,8 @@ am__can_run_installinfo = \
 am__nobase_include_HEADERS_DIST = ngtcp2/ngtcp2_crypto.h \
 	ngtcp2/ngtcp2_crypto_quictls.h ngtcp2/ngtcp2_crypto_gnutls.h \
 	ngtcp2/ngtcp2_crypto_boringssl.h \
-	ngtcp2/ngtcp2_crypto_picotls.h ngtcp2/ngtcp2_crypto_wolfssl.h
+	ngtcp2/ngtcp2_crypto_picotls.h ngtcp2/ngtcp2_crypto_wolfssl.h \
+	ngtcp2/ngtcp2_crypto_ossl.h
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -213,6 +216,12 @@ CPPFLAGS = @CPPFLAGS@
 CRYPTO_GNUTLS_LT_AGE = @CRYPTO_GNUTLS_LT_AGE@
 CRYPTO_GNUTLS_LT_CURRENT = @CRYPTO_GNUTLS_LT_CURRENT@
 CRYPTO_GNUTLS_LT_REVISION = @CRYPTO_GNUTLS_LT_REVISION@
+CRYPTO_LIBRESSL_LT_AGE = @CRYPTO_LIBRESSL_LT_AGE@
+CRYPTO_LIBRESSL_LT_CURRENT = @CRYPTO_LIBRESSL_LT_CURRENT@
+CRYPTO_LIBRESSL_LT_REVISION = @CRYPTO_LIBRESSL_LT_REVISION@
+CRYPTO_OSSL_LT_AGE = @CRYPTO_OSSL_LT_AGE@
+CRYPTO_OSSL_LT_CURRENT = @CRYPTO_OSSL_LT_CURRENT@
+CRYPTO_OSSL_LT_REVISION = @CRYPTO_OSSL_LT_REVISION@
 CRYPTO_QUICTLS_LT_AGE = @CRYPTO_QUICTLS_LT_AGE@
 CRYPTO_QUICTLS_LT_CURRENT = @CRYPTO_QUICTLS_LT_CURRENT@
 CRYPTO_QUICTLS_LT_REVISION = @CRYPTO_QUICTLS_LT_REVISION@
@@ -240,6 +249,8 @@ ETAGS = @ETAGS@
 EXAMPLES_BORINGSSL = @EXAMPLES_BORINGSSL@
 EXAMPLES_ENABLED = @EXAMPLES_ENABLED@
 EXAMPLES_GNUTLS = @EXAMPLES_GNUTLS@
+EXAMPLES_LIBRESSL = @EXAMPLES_LIBRESSL@
+EXAMPLES_OSSL = @EXAMPLES_OSSL@
 EXAMPLES_PICOTLS = @EXAMPLES_PICOTLS@
 EXAMPLES_QUICTLS = @EXAMPLES_QUICTLS@
 EXAMPLES_WOLFSSL = @EXAMPLES_WOLFSSL@
@@ -247,6 +258,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -385,7 +397,7 @@ top_srcdir = @top_srcdir@
 EXTRA_DIST = CMakeLists.txt
 nobase_include_HEADERS = ngtcp2/ngtcp2_crypto.h $(am__append_1) \
 	$(am__append_2) $(am__append_3) $(am__append_4) \
-	$(am__append_5)
+	$(am__append_5) $(am__append_6) $(am__append_7)
 all: all-am
 
 .SUFFIXES:

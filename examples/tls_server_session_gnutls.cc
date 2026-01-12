@@ -28,6 +28,7 @@
 #include <iostream>
 #include <fstream>
 #include <array>
+#include <algorithm>
 
 #include <ngtcp2/ngtcp2_crypto_gnutls.h>
 
@@ -60,10 +61,8 @@ int client_hello_cb(gnutls_session_t session, unsigned int htype, unsigned when,
 
   // TODO Fix this to properly select ALPN based on app_proto.
 
-  // strip the first byte from H3_ALPN_V1
-  auto h3 = reinterpret_cast<const char *>(&H3_ALPN_V1[1]);
-  if (static_cast<size_t>(H3_ALPN_V1[0]) != alpn.size ||
-      !std::equal(alpn.data, alpn.data + alpn.size, h3)) {
+  if (!std::ranges::equal(std::span{alpn.data, alpn.size},
+                          H3_ALPN_V1.subspan(1))) {
     return -1;
   }
 
@@ -73,10 +72,9 @@ int client_hello_cb(gnutls_session_t session, unsigned int htype, unsigned when,
 
 int TLSServerSession::init(const TLSServerContext &tls_ctx,
                            HandlerBase *handler) {
-  if (auto rv =
-          gnutls_init(&session_, GNUTLS_SERVER | GNUTLS_ENABLE_EARLY_DATA |
-                                     GNUTLS_NO_AUTO_SEND_TICKET |
-                                     GNUTLS_NO_END_OF_EARLY_DATA);
+  if (auto rv = gnutls_init(
+        &session_, GNUTLS_SERVER | GNUTLS_ENABLE_EARLY_DATA |
+                     GNUTLS_NO_AUTO_SEND_TICKET | GNUTLS_NO_END_OF_EARLY_DATA);
       rv != 0) {
     std::cerr << "gnutls_init failed: " << gnutls_strerror(rv) << std::endl;
     return -1;
@@ -95,7 +93,7 @@ int TLSServerSession::init(const TLSServerContext &tls_ctx,
   }
 
   auto rv = gnutls_session_ticket_enable_server(
-      session_, tls_ctx.get_session_ticket_key());
+    session_, tls_ctx.get_session_ticket_key());
   if (rv != 0) {
     std::cerr << "gnutls_session_ticket_enable_server failed: "
               << gnutls_strerror(rv) << std::endl;
@@ -129,12 +127,11 @@ int TLSServerSession::init(const TLSServerContext &tls_ctx,
 
   // strip the first byte from H3_ALPN_V1
   gnutls_datum_t alpn{
-      .data = const_cast<uint8_t *>(&H3_ALPN_V1[1]),
-      .size = H3_ALPN_V1[0],
+    .data = const_cast<uint8_t *>(&H3_ALPN_V1[1]),
+    .size = H3_ALPN_V1[0],
   };
-  gnutls_alpn_set_protocols(session_, &alpn, 1,
-                            GNUTLS_ALPN_MANDATORY |
-                                GNUTLS_ALPN_SERVER_PRECEDENCE);
+  gnutls_alpn_set_protocols(
+    session_, &alpn, 1, GNUTLS_ALPN_MANDATORY | GNUTLS_ALPN_SERVER_PRECEDENCE);
 
   if (config.verify_client) {
     gnutls_certificate_server_set_request(session_, GNUTLS_CERT_REQUIRE);

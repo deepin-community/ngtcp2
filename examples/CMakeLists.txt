@@ -21,7 +21,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-if(LIBEV_FOUND AND HAVE_OPENSSL AND LIBNGHTTP3_FOUND)
+if(LIBEV_FOUND AND (HAVE_QUICTLS OR HAVE_LIBRESSL) AND LIBNGHTTP3_FOUND)
   set(qtlsclient_SOURCES
     client.cc
     client_base.cc
@@ -41,6 +41,7 @@ if(LIBEV_FOUND AND HAVE_OPENSSL AND LIBNGHTTP3_FOUND)
     util.cc
     http.cc
     shared.cc
+    siphash.cc
     tls_server_context_quictls.cc
     tls_server_session_quictls.cc
     tls_session_base_quictls.cc
@@ -51,6 +52,7 @@ if(LIBEV_FOUND AND HAVE_OPENSSL AND LIBNGHTTP3_FOUND)
     ${CMAKE_SOURCE_DIR}/lib/includes
     ${CMAKE_BINARY_DIR}/lib/includes
     ${CMAKE_SOURCE_DIR}/third-party
+    ${CMAKE_SOURCE_DIR}/third-party/urlparse
     ${CMAKE_SOURCE_DIR}/crypto/includes
 
     ${JEMALLOC_INCLUDE_DIRS}
@@ -59,8 +61,13 @@ if(LIBEV_FOUND AND HAVE_OPENSSL AND LIBNGHTTP3_FOUND)
     ${LIBNGHTTP3_INCLUDE_DIRS}
   )
 
-  set(qtls_LIBS
-    ngtcp2_crypto_quictls
+  set(qtls_LIBS "")
+  if(HAVE_QUICTLS)
+    list(APPEND qtls_LIBS ngtcp2_crypto_quictls)
+  else()
+    list(APPEND qtls_LIBS ngtcp2_crypto_libressl)
+  endif()
+  list(APPEND qtls_LIBS
     ngtcp2
     ${JEMALLOC_LIBRARIES}
     ${OPENSSL_LIBRARIES}
@@ -68,15 +75,19 @@ if(LIBEV_FOUND AND HAVE_OPENSSL AND LIBNGHTTP3_FOUND)
     ${LIBNGHTTP3_LIBRARIES}
   )
 
-  add_executable(qtlsclient ${qtlsclient_SOURCES} $<TARGET_OBJECTS:http-parser>)
-  add_executable(qtlsserver ${qtlsserver_SOURCES} $<TARGET_OBJECTS:http-parser>)
+  add_executable(qtlsclient ${qtlsclient_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
+  add_executable(qtlsserver ${qtlsserver_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
   set_target_properties(qtlsclient PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_QUICTLS -DWITH_EXAMPLE_QUICTLS"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_QUICTLS"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
   set_target_properties(qtlsserver PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_QUICTLS -DWITH_EXAMPLE_QUICTLS"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_QUICTLS"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
@@ -108,6 +119,7 @@ if(LIBEV_FOUND AND HAVE_GNUTLS AND LIBNGHTTP3_FOUND)
     util.cc
     http.cc
     shared.cc
+    siphash.cc
     tls_server_context_gnutls.cc
     tls_server_session_gnutls.cc
     tls_session_base_gnutls.cc
@@ -118,6 +130,7 @@ if(LIBEV_FOUND AND HAVE_GNUTLS AND LIBNGHTTP3_FOUND)
     ${CMAKE_SOURCE_DIR}/lib/includes
     ${CMAKE_BINARY_DIR}/lib/includes
     ${CMAKE_SOURCE_DIR}/third-party
+    ${CMAKE_SOURCE_DIR}/third-party/urlparse
     ${CMAKE_SOURCE_DIR}/crypto/includes
 
     ${JEMALLOC_INCLUDE_DIRS}
@@ -135,15 +148,19 @@ if(LIBEV_FOUND AND HAVE_GNUTLS AND LIBNGHTTP3_FOUND)
     ${LIBNGHTTP3_LIBRARIES}
   )
 
-  add_executable(gtlsclient ${gtlsclient_SOURCES} $<TARGET_OBJECTS:http-parser>)
-  add_executable(gtlsserver ${gtlsserver_SOURCES} $<TARGET_OBJECTS:http-parser>)
+  add_executable(gtlsclient ${gtlsclient_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
+  add_executable(gtlsserver ${gtlsserver_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
   set_target_properties(gtlsclient PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_GNUTLS -DWITH_EXAMPLE_GNUTLS"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_GNUTLS"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
   set_target_properties(gtlsserver PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_GNUTLS -DWITH_EXAMPLE_GNUTLS"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_GNUTLS"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
@@ -176,6 +193,7 @@ if(LIBEV_FOUND AND HAVE_BORINGSSL AND LIBNGHTTP3_FOUND)
     util.cc
     http.cc
     shared.cc
+    siphash.cc
     tls_server_context_boringssl.cc
     tls_server_session_boringssl.cc
     tls_session_base_quictls.cc
@@ -187,6 +205,7 @@ if(LIBEV_FOUND AND HAVE_BORINGSSL AND LIBNGHTTP3_FOUND)
     ${CMAKE_SOURCE_DIR}/lib/includes
     ${CMAKE_BINARY_DIR}/lib/includes
     ${CMAKE_SOURCE_DIR}/third-party
+    ${CMAKE_SOURCE_DIR}/third-party/urlparse
     ${CMAKE_SOURCE_DIR}/crypto/includes
 
     ${JEMALLOC_INCLUDE_DIRS}
@@ -208,15 +227,19 @@ if(LIBEV_FOUND AND HAVE_BORINGSSL AND LIBNGHTTP3_FOUND)
     ${LIBBROTLIDEC_LIBRARIES}
   )
 
-  add_executable(bsslclient ${bsslclient_SOURCES} $<TARGET_OBJECTS:http-parser>)
-  add_executable(bsslserver ${bsslserver_SOURCES} $<TARGET_OBJECTS:http-parser>)
+  add_executable(bsslclient ${bsslclient_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
+  add_executable(bsslserver ${bsslserver_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
   set_target_properties(bsslclient PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_BORINGSSL -DWITH_EXAMPLE_BORINGSSL"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_BORINGSSL"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
   set_target_properties(bsslserver PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_BORINGSSL -DWITH_EXAMPLE_BORINGSSL"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_BORINGSSL"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
@@ -249,6 +272,7 @@ if(LIBEV_FOUND AND HAVE_PICOTLS AND LIBNGHTTP3_FOUND)
     util.cc
     http.cc
     shared.cc
+    siphash.cc
     tls_server_context_picotls.cc
     tls_server_session_picotls.cc
     tls_session_base_picotls.cc
@@ -260,6 +284,7 @@ if(LIBEV_FOUND AND HAVE_PICOTLS AND LIBNGHTTP3_FOUND)
     ${CMAKE_SOURCE_DIR}/lib/includes
     ${CMAKE_BINARY_DIR}/lib/includes
     ${CMAKE_SOURCE_DIR}/third-party
+    ${CMAKE_SOURCE_DIR}/third-party/urlparse
     ${CMAKE_SOURCE_DIR}/crypto/includes
 
     ${JEMALLOC_INCLUDE_DIRS}
@@ -279,15 +304,19 @@ if(LIBEV_FOUND AND HAVE_PICOTLS AND LIBNGHTTP3_FOUND)
     ${LIBNGHTTP3_LIBRARIES}
   )
 
-  add_executable(ptlsclient ${ptlsclient_SOURCES} $<TARGET_OBJECTS:http-parser>)
-  add_executable(ptlsserver ${ptlsserver_SOURCES} $<TARGET_OBJECTS:http-parser>)
+  add_executable(ptlsclient ${ptlsclient_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
+  add_executable(ptlsserver ${ptlsserver_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
   set_target_properties(ptlsclient PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_PICOTLS -DWITH_EXAMPLE_PICOTLS"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_PICOTLS"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
   set_target_properties(ptlsserver PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_PICOTLS -DWITH_EXAMPLE_PICOTLS"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_PICOTLS"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
@@ -319,6 +348,7 @@ if(LIBEV_FOUND AND HAVE_WOLFSSL AND LIBNGHTTP3_FOUND)
     util.cc
     http.cc
     shared.cc
+    siphash.cc
     tls_server_context_wolfssl.cc
     tls_server_session_wolfssl.cc
     tls_session_base_wolfssl.cc
@@ -329,6 +359,7 @@ if(LIBEV_FOUND AND HAVE_WOLFSSL AND LIBNGHTTP3_FOUND)
     ${CMAKE_SOURCE_DIR}/lib/includes
     ${CMAKE_BINARY_DIR}/lib/includes
     ${CMAKE_SOURCE_DIR}/third-party
+    ${CMAKE_SOURCE_DIR}/third-party/urlparse
     ${CMAKE_SOURCE_DIR}/crypto/includes
 
     ${JEMALLOC_INCLUDE_DIRS}
@@ -346,15 +377,19 @@ if(LIBEV_FOUND AND HAVE_WOLFSSL AND LIBNGHTTP3_FOUND)
     ${LIBNGHTTP3_LIBRARIES}
   )
 
-  add_executable(wsslclient ${wsslclient_SOURCES} $<TARGET_OBJECTS:http-parser>)
-  add_executable(wsslserver ${wsslserver_SOURCES} $<TARGET_OBJECTS:http-parser>)
+  add_executable(wsslclient ${wsslclient_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
+  add_executable(wsslserver ${wsslserver_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
   set_target_properties(wsslclient PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_WOLFSSL -DWITH_EXAMPLE_WOLFSSL"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_WOLFSSL"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
   set_target_properties(wsslserver PROPERTIES
-    COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_WOLFSSL -DWITH_EXAMPLE_WOLFSSL"
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_WOLFSSL"
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
   )
@@ -364,4 +399,77 @@ if(LIBEV_FOUND AND HAVE_WOLFSSL AND LIBNGHTTP3_FOUND)
   target_link_libraries(wsslserver ${wolfssl_LIBS})
 
   # TODO prevent wsslclient and example wsslserver from being installed?
+endif()
+
+if(LIBEV_FOUND AND HAVE_OSSL AND LIBNGHTTP3_FOUND)
+  set(osslclient_SOURCES
+    client.cc
+    client_base.cc
+    debug.cc
+    util.cc
+    shared.cc
+    tls_client_context_ossl.cc
+    tls_client_session_ossl.cc
+    tls_session_base_ossl.cc
+    util_openssl.cc
+  )
+
+  set(osslserver_SOURCES
+    server.cc
+    server_base.cc
+    debug.cc
+    util.cc
+    http.cc
+    shared.cc
+    siphash.cc
+    tls_server_context_ossl.cc
+    tls_server_session_ossl.cc
+    tls_session_base_ossl.cc
+    util_openssl.cc
+  )
+
+  set(ossl_INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/lib/includes
+    ${CMAKE_BINARY_DIR}/lib/includes
+    ${CMAKE_SOURCE_DIR}/third-party
+    ${CMAKE_SOURCE_DIR}/third-party/urlparse
+    ${CMAKE_SOURCE_DIR}/crypto/includes
+
+    ${JEMALLOC_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIRS}
+    ${LIBEV_INCLUDE_DIRS}
+    ${LIBNGHTTP3_INCLUDE_DIRS}
+  )
+
+  set(ossl_LIBS
+    ngtcp2_crypto_ossl
+    ngtcp2
+    ${JEMALLOC_LIBRARIES}
+    ${OPENSSL_LIBRARIES}
+    ${LIBEV_LIBRARIES}
+    ${LIBNGHTTP3_LIBRARIES}
+  )
+
+  add_executable(osslclient ${osslclient_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
+  add_executable(osslserver ${osslserver_SOURCES}
+    $<TARGET_OBJECTS:urlparse>
+  )
+  set_target_properties(osslclient PROPERTIES
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_OSSL"
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+  )
+  set_target_properties(osslserver PROPERTIES
+    COMPILE_FLAGS "${WARNCXXFLAGS} -DWITH_EXAMPLE_OSSL"
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+  )
+  target_include_directories(osslclient PUBLIC ${ossl_INCLUDE_DIRS})
+  target_include_directories(osslserver PUBLIC ${ossl_INCLUDE_DIRS})
+  target_link_libraries(osslclient ${ossl_LIBS})
+  target_link_libraries(osslserver ${ossl_LIBS})
+
+  # TODO prevent client and example servers from being installed?
 endif()

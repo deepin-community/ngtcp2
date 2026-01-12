@@ -33,37 +33,37 @@
 #include <unistd.h>
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
-#endif // HAVE_NETINET_IN_H
+#endif // defined(HAVE_NETINET_IN_H)
 #ifdef HAVE_NETINET_UDP_H
 #  include <netinet/udp.h>
-#endif // HAVE_NETINET_UDP_H
+#endif // defined(HAVE_NETINET_UDP_H)
 #ifdef HAVE_NETINET_IP_H
 #  include <netinet/ip.h>
-#endif // HAVE_NETINET_IP_H
+#endif // defined(HAVE_NETINET_IP_H)
 #ifdef HAVE_ASM_TYPES_H
 #  include <asm/types.h>
-#endif // HAVE_ASM_TYPES_H
+#endif // defined(HAVE_ASM_TYPES_H)
 #ifdef HAVE_LINUX_NETLINK_H
 #  include <linux/netlink.h>
-#endif // HAVE_LINUX_NETLINK_H
+#endif // defined(HAVE_LINUX_NETLINK_H)
 #ifdef HAVE_LINUX_RTNETLINK_H
 #  include <linux/rtnetlink.h>
-#endif // HAVE_LINUX_RTNETLINK_H
+#endif // defined(HAVE_LINUX_RTNETLINK_H)
 
 #include "template.h"
 
 namespace ngtcp2 {
 
-unsigned int msghdr_get_ecn(msghdr *msg, int family) {
+uint8_t msghdr_get_ecn(msghdr *msg, int family) {
   switch (family) {
   case AF_INET:
     for (auto cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
       if (cmsg->cmsg_level == IPPROTO_IP &&
 #ifdef __APPLE__
           cmsg->cmsg_type == IP_RECVTOS
-#else  // !__APPLE__
+#else  // !defined(__APPLE__)
           cmsg->cmsg_type == IP_TOS
-#endif // !__APPLE__
+#endif // !defined(__APPLE__)
           && cmsg->cmsg_len) {
         return *reinterpret_cast<uint8_t *>(CMSG_DATA(cmsg)) & IPTOS_ECN_MASK;
       }
@@ -110,7 +110,7 @@ void fd_set_ip_mtu_discover(int fd, int family) {
 
   switch (family) {
   case AF_INET:
-    val = IP_PMTUDISC_DO;
+    val = IP_PMTUDISC_PROBE;
     if (setsockopt(fd, IPPROTO_IP, IP_MTU_DISCOVER, &val,
                    static_cast<socklen_t>(sizeof(val))) == -1) {
       std::cerr << "setsockopt: IP_MTU_DISCOVER: " << strerror(errno)
@@ -118,7 +118,7 @@ void fd_set_ip_mtu_discover(int fd, int family) {
     }
     break;
   case AF_INET6:
-    val = IPV6_PMTUDISC_DO;
+    val = IPV6_PMTUDISC_PROBE;
     if (setsockopt(fd, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &val,
                    static_cast<socklen_t>(sizeof(val))) == -1) {
       std::cerr << "setsockopt: IPV6_MTU_DISCOVER: " << strerror(errno)
@@ -159,7 +159,7 @@ void fd_set_udp_gro(int fd) {
                  static_cast<socklen_t>(sizeof(val))) == -1) {
     std::cerr << "setsockopt: UDP_GRO: " << strerror(errno) << std::endl;
   }
-#endif // UDP_GRO
+#endif // defined(UDP_GRO)
 }
 
 std::optional<Address> msghdr_get_local_addr(msghdr *msg, int family) {
@@ -169,9 +169,10 @@ std::optional<Address> msghdr_get_local_addr(msghdr *msg, int family) {
       if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_PKTINFO) {
         in_pktinfo pktinfo;
         memcpy(&pktinfo, CMSG_DATA(cmsg), sizeof(pktinfo));
-        Address res{};
-        res.ifindex = pktinfo.ipi_ifindex;
-        res.len = sizeof(res.su.in);
+        Address res{
+          .len = sizeof(res.su.in),
+          .ifindex = static_cast<uint32_t>(pktinfo.ipi_ifindex),
+        };
         auto &sa = res.su.in;
         sa.sin_family = AF_INET;
         sa.sin_addr = pktinfo.ipi_addr;
@@ -184,9 +185,10 @@ std::optional<Address> msghdr_get_local_addr(msghdr *msg, int family) {
       if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO) {
         in6_pktinfo pktinfo;
         memcpy(&pktinfo, CMSG_DATA(cmsg), sizeof(pktinfo));
-        Address res{};
-        res.ifindex = pktinfo.ipi6_ifindex;
-        res.len = sizeof(res.su.in6);
+        Address res{
+          .len = sizeof(res.su.in6),
+          .ifindex = static_cast<uint32_t>(pktinfo.ipi6_ifindex),
+        };
         auto &sa = res.su.in6;
         sa.sin6_family = AF_INET6;
         sa.sin6_addr = pktinfo.ipi6_addr;
@@ -199,7 +201,7 @@ std::optional<Address> msghdr_get_local_addr(msghdr *msg, int family) {
 }
 
 size_t msghdr_get_udp_gro(msghdr *msg) {
-  uint16_t gso_size = 0;
+  int gso_size = 0;
 
 #ifdef UDP_GRO
   for (auto cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
@@ -209,12 +211,12 @@ size_t msghdr_get_udp_gro(msghdr *msg) {
       break;
     }
   }
-#endif // UDP_GRO
+#endif // defined(UDP_GRO)
 
-  return gso_size;
+  return static_cast<size_t>(gso_size);
 }
 
-void set_port(Address &dst, Address &src) {
+void set_port(Address &dst, const Address &src) {
   switch (dst.su.storage.ss_family) {
   case AF_INET:
     assert(AF_INET == src.su.storage.ss_family);
@@ -240,15 +242,23 @@ struct nlmsg {
 
 namespace {
 int send_netlink_msg(int fd, const Address &remote_addr, uint32_t seq) {
-  nlmsg nlmsg{};
-  nlmsg.hdr.nlmsg_type = RTM_GETROUTE;
-  nlmsg.hdr.nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
-  nlmsg.hdr.nlmsg_seq = seq;
-
-  nlmsg.msg.rtm_family = remote_addr.su.sa.sa_family;
-  nlmsg.msg.rtm_protocol = RTPROT_KERNEL;
-
-  nlmsg.dst.rta_type = RTA_DST;
+  nlmsg nlmsg{
+    .hdr =
+      {
+        .nlmsg_type = RTM_GETROUTE,
+        .nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK,
+        .nlmsg_seq = seq,
+      },
+    .msg =
+      {
+        .rtm_family = static_cast<unsigned char>(remote_addr.su.sa.sa_family),
+        .rtm_protocol = RTPROT_KERNEL,
+      },
+    .dst =
+      {
+        .rta_type = RTA_DST,
+      },
+  };
 
   switch (remote_addr.su.sa.sa_family) {
   case AF_INET:
@@ -267,15 +277,20 @@ int send_netlink_msg(int fd, const Address &remote_addr, uint32_t seq) {
 
   nlmsg.hdr.nlmsg_len = NLMSG_LENGTH(sizeof(nlmsg.msg) + nlmsg.dst.rta_len);
 
-  sockaddr_nl sa{};
-  sa.nl_family = AF_NETLINK;
+  sockaddr_nl sa{
+    .nl_family = AF_NETLINK,
+  };
 
-  iovec iov{&nlmsg, nlmsg.hdr.nlmsg_len};
-  msghdr msg{};
-  msg.msg_name = &sa;
-  msg.msg_namelen = sizeof(sa);
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
+  iovec iov{
+    .iov_base = &nlmsg,
+    .iov_len = nlmsg.hdr.nlmsg_len,
+  };
+  msghdr msg{
+    .msg_name = &sa,
+    .msg_namelen = sizeof(sa),
+    .msg_iov = &iov,
+    .msg_iovlen = 1,
+  };
 
   ssize_t nwrite;
 
@@ -296,15 +311,17 @@ int send_netlink_msg(int fd, const Address &remote_addr, uint32_t seq) {
 namespace {
 int recv_netlink_msg(in_addr_union &iau, int fd, uint32_t seq) {
   std::array<uint8_t, 8192> buf;
-  iovec iov = {buf.data(), buf.size()};
+  iovec iov = {
+    .iov_base = buf.data(),
+    .iov_len = buf.size(),
+  };
   sockaddr_nl sa{};
-  msghdr msg{};
-
-  msg.msg_name = &sa;
-  msg.msg_namelen = sizeof(sa);
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
-
+  msghdr msg{
+    .msg_name = &sa,
+    .msg_namelen = sizeof(sa),
+    .msg_iov = &iov,
+    .msg_iovlen = 1,
+  };
   ssize_t nread;
 
   do {
@@ -348,7 +365,7 @@ int recv_netlink_msg(in_addr_union &iau, int fd, uint32_t seq) {
     auto attrlen = hdr->nlmsg_len - NLMSG_SPACE(sizeof(rtmsg));
 
     for (auto rta = reinterpret_cast<rtattr *>(
-             static_cast<uint8_t *>(NLMSG_DATA(hdr)) + sizeof(rtmsg));
+           static_cast<uint8_t *>(NLMSG_DATA(hdr)) + sizeof(rtmsg));
          RTA_OK(rta, attrlen); rta = RTA_NEXT(rta, attrlen)) {
       if (rta->rta_type != RTA_PREFSRC) {
         continue;
@@ -443,8 +460,9 @@ int recv_netlink_msg(in_addr_union &iau, int fd, uint32_t seq) {
 } // namespace
 
 int get_local_addr(in_addr_union &iau, const Address &remote_addr) {
-  sockaddr_nl sa{};
-  sa.nl_family = AF_NETLINK;
+  sockaddr_nl sa{
+    .nl_family = AF_NETLINK,
+  };
 
   auto fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
   if (fd == -1) {
@@ -470,7 +488,7 @@ int get_local_addr(in_addr_union &iau, const Address &remote_addr) {
   return recv_netlink_msg(iau, fd, seq);
 }
 
-#endif // HAVE_LINUX_NETLINK_H
+#endif // defined(HAVE_LINUX_NETLINK_H)
 
 bool addreq(const sockaddr *sa, const in_addr_union &iau) {
   switch (sa->sa_family) {

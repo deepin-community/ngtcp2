@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif /* HAVE_CONFIG_H */
+#endif /* defined(HAVE_CONFIG_H) */
 
 #define MUNIT_ENABLE_ASSERT_ALIASES
 
@@ -35,7 +35,7 @@
 
 extern const MunitSuite settings_suite;
 
-munit_void_test_decl(test_ngtcp2_settings_convert_to_latest);
-munit_void_test_decl(test_ngtcp2_settings_convert_to_old);
+munit_void_test_decl(test_ngtcp2_settings_convert_to_latest)
+munit_void_test_decl(test_ngtcp2_settings_convert_to_old)
 
-#endif /* NGTCP2_SETTINGS_TEST_H */
+#endif /* !defined(NGTCP2_SETTINGS_TEST_H) */

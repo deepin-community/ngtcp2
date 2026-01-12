@@ -104,11 +104,13 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @HAVE_CRYPTO_TRUE@am__append_1 = includes
-@HAVE_OPENSSL_TRUE@am__append_2 = quictls
-@HAVE_GNUTLS_TRUE@am__append_3 = gnutls
-@HAVE_BORINGSSL_TRUE@am__append_4 = boringssl
-@HAVE_PICOTLS_TRUE@am__append_5 = picotls
-@HAVE_WOLFSSL_TRUE@am__append_6 = wolfssl
+@HAVE_QUICTLS_TRUE@am__append_2 = quictls
+@HAVE_LIBRESSL_TRUE@am__append_3 = quictls
+@HAVE_GNUTLS_TRUE@am__append_4 = gnutls
+@HAVE_BORINGSSL_TRUE@am__append_5 = boringssl
+@HAVE_PICOTLS_TRUE@am__append_6 = picotls
+@HAVE_WOLFSSL_TRUE@am__append_7 = wolfssl
+@HAVE_OSSL_TRUE@am__append_8 = ossl
 subdir = crypto
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -175,7 +177,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = includes quictls gnutls boringssl picotls wolfssl
+DIST_SUBDIRS = includes quictls gnutls boringssl picotls wolfssl ossl
 am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
@@ -221,6 +223,12 @@ CPPFLAGS = @CPPFLAGS@
 CRYPTO_GNUTLS_LT_AGE = @CRYPTO_GNUTLS_LT_AGE@
 CRYPTO_GNUTLS_LT_CURRENT = @CRYPTO_GNUTLS_LT_CURRENT@
 CRYPTO_GNUTLS_LT_REVISION = @CRYPTO_GNUTLS_LT_REVISION@
+CRYPTO_LIBRESSL_LT_AGE = @CRYPTO_LIBRESSL_LT_AGE@
+CRYPTO_LIBRESSL_LT_CURRENT = @CRYPTO_LIBRESSL_LT_CURRENT@
+CRYPTO_LIBRESSL_LT_REVISION = @CRYPTO_LIBRESSL_LT_REVISION@
+CRYPTO_OSSL_LT_AGE = @CRYPTO_OSSL_LT_AGE@
+CRYPTO_OSSL_LT_CURRENT = @CRYPTO_OSSL_LT_CURRENT@
+CRYPTO_OSSL_LT_REVISION = @CRYPTO_OSSL_LT_REVISION@
 CRYPTO_QUICTLS_LT_AGE = @CRYPTO_QUICTLS_LT_AGE@
 CRYPTO_QUICTLS_LT_CURRENT = @CRYPTO_QUICTLS_LT_CURRENT@
 CRYPTO_QUICTLS_LT_REVISION = @CRYPTO_QUICTLS_LT_REVISION@
@@ -248,6 +256,8 @@ ETAGS = @ETAGS@
 EXAMPLES_BORINGSSL = @EXAMPLES_BORINGSSL@
 EXAMPLES_ENABLED = @EXAMPLES_ENABLED@
 EXAMPLES_GNUTLS = @EXAMPLES_GNUTLS@
+EXAMPLES_LIBRESSL = @EXAMPLES_LIBRESSL@
+EXAMPLES_OSSL = @EXAMPLES_OSSL@
 EXAMPLES_PICOTLS = @EXAMPLES_PICOTLS@
 EXAMPLES_QUICTLS = @EXAMPLES_QUICTLS@
 EXAMPLES_WOLFSSL = @EXAMPLES_WOLFSSL@
@@ -255,6 +265,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -391,7 +402,8 @@ top_srcdir = @top_srcdir@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) $(am__append_5) $(am__append_6)
+	$(am__append_4) $(am__append_5) $(am__append_6) \
+	$(am__append_7) $(am__append_8)
 EXTRA_DIST = CMakeLists.txt
 all: all-recursive
 
