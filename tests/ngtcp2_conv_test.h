@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif /* HAVE_CONFIG_H */
+#endif /* defined(HAVE_CONFIG_H) */
 
 #define MUNIT_ENABLE_ASSERT_ALIASES
 
@@ -35,18 +35,14 @@
 
 extern const MunitSuite conv_suite;
 
-munit_void_test_decl(test_ngtcp2_get_varint);
-munit_void_test_decl(test_ngtcp2_get_uvarintlen);
-munit_void_test_decl(test_ngtcp2_put_uvarintlen);
-munit_void_test_decl(test_ngtcp2_get_uint64);
-munit_void_test_decl(test_ngtcp2_get_uint48);
-munit_void_test_decl(test_ngtcp2_get_uint32);
-munit_void_test_decl(test_ngtcp2_get_uint24);
-munit_void_test_decl(test_ngtcp2_get_uint16);
-munit_void_test_decl(test_ngtcp2_get_uint16be);
-munit_void_test_decl(test_ngtcp2_nth_server_bidi_id);
-munit_void_test_decl(test_ngtcp2_nth_server_uni_id);
-munit_void_test_decl(test_ngtcp2_nth_client_bidi_id);
-munit_void_test_decl(test_ngtcp2_nth_client_uni_id);
+munit_void_test_decl(test_ngtcp2_get_varint)
+munit_void_test_decl(test_ngtcp2_get_uvarintlen)
+munit_void_test_decl(test_ngtcp2_put_uvarintlen)
+munit_void_test_decl(test_ngtcp2_get_uint64be)
+munit_void_test_decl(test_ngtcp2_get_uint32be)
+munit_void_test_decl(test_ngtcp2_get_uint24be)
+munit_void_test_decl(test_ngtcp2_get_uint16be)
+munit_void_test_decl(test_ngtcp2_get_uint16)
+munit_void_test_decl(test_ngtcp2_put_pkt_num)
 
-#endif /* NGTCP2_CONV_TEST_H */
+#endif /* !defined(NGTCP2_CONV_TEST_H) */

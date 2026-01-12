@@ -134,7 +134,10 @@ am__objects_2 = main.$(OBJEXT) ngtcp2_pkt_test.$(OBJEXT) \
 	ngtcp2_pmtud_test.$(OBJEXT) ngtcp2_str_test.$(OBJEXT) \
 	ngtcp2_tstamp_test.$(OBJEXT) ngtcp2_cc_test.$(OBJEXT) \
 	ngtcp2_qlog_test.$(OBJEXT) ngtcp2_window_filter_test.$(OBJEXT) \
-	ngtcp2_settings_test.$(OBJEXT) ngtcp2_ppe_test.$(OBJEXT) \
+	ngtcp2_settings_test.$(OBJEXT) ngtcp2_callbacks_test.$(OBJEXT) \
+	ngtcp2_ppe_test.$(OBJEXT) ngtcp2_dcidtr_test.$(OBJEXT) \
+	ngtcp2_addr_test.$(OBJEXT) ngtcp2_pcg_test.$(OBJEXT) \
+	ngtcp2_ratelim_test.$(OBJEXT) ngtcp2_conn_info_test.$(OBJEXT) \
 	ngtcp2_test_helper.$(OBJEXT) munit/munit.$(OBJEXT)
 am_main_OBJECTS = $(am__objects_1) $(am__objects_2)
 main_OBJECTS = $(am_main_OBJECTS)
@@ -164,16 +167,23 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/main.Po \
-	./$(DEPDIR)/ngtcp2_acktr_test.Po ./$(DEPDIR)/ngtcp2_cc_test.Po \
+	./$(DEPDIR)/ngtcp2_acktr_test.Po \
+	./$(DEPDIR)/ngtcp2_addr_test.Po \
+	./$(DEPDIR)/ngtcp2_callbacks_test.Po \
+	./$(DEPDIR)/ngtcp2_cc_test.Po \
+	./$(DEPDIR)/ngtcp2_conn_info_test.Po \
 	./$(DEPDIR)/ngtcp2_conn_test.Po \
 	./$(DEPDIR)/ngtcp2_conv_test.Po \
+	./$(DEPDIR)/ngtcp2_dcidtr_test.Po \
 	./$(DEPDIR)/ngtcp2_gaptr_test.Po \
 	./$(DEPDIR)/ngtcp2_idtr_test.Po ./$(DEPDIR)/ngtcp2_ksl_test.Po \
-	./$(DEPDIR)/ngtcp2_map_test.Po ./$(DEPDIR)/ngtcp2_pkt_test.Po \
+	./$(DEPDIR)/ngtcp2_map_test.Po ./$(DEPDIR)/ngtcp2_pcg_test.Po \
+	./$(DEPDIR)/ngtcp2_pkt_test.Po \
 	./$(DEPDIR)/ngtcp2_pmtud_test.Po \
 	./$(DEPDIR)/ngtcp2_ppe_test.Po ./$(DEPDIR)/ngtcp2_pv_test.Po \
 	./$(DEPDIR)/ngtcp2_qlog_test.Po \
 	./$(DEPDIR)/ngtcp2_range_test.Po \
+	./$(DEPDIR)/ngtcp2_ratelim_test.Po \
 	./$(DEPDIR)/ngtcp2_ringbuf_test.Po \
 	./$(DEPDIR)/ngtcp2_rob_test.Po ./$(DEPDIR)/ngtcp2_rtb_test.Po \
 	./$(DEPDIR)/ngtcp2_settings_test.Po \
@@ -453,6 +463,12 @@ CPPFLAGS = @CPPFLAGS@
 CRYPTO_GNUTLS_LT_AGE = @CRYPTO_GNUTLS_LT_AGE@
 CRYPTO_GNUTLS_LT_CURRENT = @CRYPTO_GNUTLS_LT_CURRENT@
 CRYPTO_GNUTLS_LT_REVISION = @CRYPTO_GNUTLS_LT_REVISION@
+CRYPTO_LIBRESSL_LT_AGE = @CRYPTO_LIBRESSL_LT_AGE@
+CRYPTO_LIBRESSL_LT_CURRENT = @CRYPTO_LIBRESSL_LT_CURRENT@
+CRYPTO_LIBRESSL_LT_REVISION = @CRYPTO_LIBRESSL_LT_REVISION@
+CRYPTO_OSSL_LT_AGE = @CRYPTO_OSSL_LT_AGE@
+CRYPTO_OSSL_LT_CURRENT = @CRYPTO_OSSL_LT_CURRENT@
+CRYPTO_OSSL_LT_REVISION = @CRYPTO_OSSL_LT_REVISION@
 CRYPTO_QUICTLS_LT_AGE = @CRYPTO_QUICTLS_LT_AGE@
 CRYPTO_QUICTLS_LT_CURRENT = @CRYPTO_QUICTLS_LT_CURRENT@
 CRYPTO_QUICTLS_LT_REVISION = @CRYPTO_QUICTLS_LT_REVISION@
@@ -480,6 +496,8 @@ ETAGS = @ETAGS@
 EXAMPLES_BORINGSSL = @EXAMPLES_BORINGSSL@
 EXAMPLES_ENABLED = @EXAMPLES_ENABLED@
 EXAMPLES_GNUTLS = @EXAMPLES_GNUTLS@
+EXAMPLES_LIBRESSL = @EXAMPLES_LIBRESSL@
+EXAMPLES_OSSL = @EXAMPLES_OSSL@
 EXAMPLES_PICOTLS = @EXAMPLES_PICOTLS@
 EXAMPLES_QUICTLS = @EXAMPLES_QUICTLS@
 EXAMPLES_WOLFSSL = @EXAMPLES_WOLFSSL@
@@ -487,6 +505,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -648,7 +667,13 @@ OBJECTS = \
 	ngtcp2_qlog_test.c \
 	ngtcp2_window_filter_test.c \
 	ngtcp2_settings_test.c \
+	ngtcp2_callbacks_test.c \
 	ngtcp2_ppe_test.c \
+	ngtcp2_dcidtr_test.c \
+	ngtcp2_addr_test.c \
+	ngtcp2_pcg_test.c \
+	ngtcp2_ratelim_test.c \
+	ngtcp2_conn_info_test.c \
 	ngtcp2_test_helper.c \
 	munit/munit.c
 
@@ -676,7 +701,13 @@ HFILES = \
 	ngtcp2_qlog_test.h \
 	ngtcp2_window_filter_test.h \
 	ngtcp2_settings_test.h \
+	ngtcp2_callbacks_test.h \
 	ngtcp2_ppe_test.h \
+	ngtcp2_dcidtr_test.h \
+	ngtcp2_addr_test.h \
+	ngtcp2_pcg_test.h \
+	ngtcp2_ratelim_test.h \
+	ngtcp2_conn_info_test.h \
 	ngtcp2_test_helper.h \
 	munit/munit.h
 
@@ -760,19 +791,25 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_acktr_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_addr_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_callbacks_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_cc_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conn_info_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conn_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conv_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_dcidtr_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_gaptr_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_idtr_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_ksl_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_map_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_pcg_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_pkt_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_pmtud_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_ppe_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_pv_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_qlog_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_range_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_ratelim_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_ringbuf_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_rob_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_rtb_test.Po@am__quote@ # am--include-marker
@@ -1118,19 +1155,25 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/main.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_acktr_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_addr_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_callbacks_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_cc_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_conn_info_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_conn_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_conv_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_dcidtr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_gaptr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_idtr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_ksl_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_map_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_pcg_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_pkt_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_pmtud_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_ppe_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_pv_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_qlog_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_range_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_ratelim_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_ringbuf_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_rob_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_rtb_test.Po
@@ -1190,19 +1233,25 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/main.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_acktr_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_addr_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_callbacks_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_cc_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_conn_info_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_conn_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_conv_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_dcidtr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_gaptr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_idtr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_ksl_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_map_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_pcg_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_pkt_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_pmtud_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_ppe_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_pv_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_qlog_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_range_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_ratelim_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_ringbuf_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_rob_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_rtb_test.Po

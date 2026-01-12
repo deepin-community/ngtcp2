@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#endif // HAVE_CONFIG_H
+#endif // defined(HAVE_CONFIG_H)
 
 #define MUNIT_ENABLE_ASSERT_ALIASES
 
@@ -37,17 +37,19 @@ namespace ngtcp2 {
 
 extern const MunitSuite util_suite;
 
-munit_void_test_decl(test_util_format_durationf);
-munit_void_test_decl(test_util_format_uint);
-munit_void_test_decl(test_util_format_uint_iec);
-munit_void_test_decl(test_util_format_duration);
-munit_void_test_decl(test_util_parse_uint);
-munit_void_test_decl(test_util_parse_uint_iec);
-munit_void_test_decl(test_util_parse_duration);
-munit_void_test_decl(test_util_normalize_path);
-munit_void_test_decl(test_util_hexdump);
-munit_void_test_decl(test_util_format_hex);
+munit_void_test_decl(test_util_format_durationf)
+munit_void_test_decl(test_util_format_uint)
+munit_void_test_decl(test_util_format_uint_iec)
+munit_void_test_decl(test_util_format_duration)
+munit_void_test_decl(test_util_parse_uint)
+munit_void_test_decl(test_util_parse_uint_iec)
+munit_void_test_decl(test_util_parse_duration)
+munit_void_test_decl(test_util_normalize_path)
+munit_void_test_decl(test_util_hexdump)
+munit_void_test_decl(test_util_format_hex)
+munit_void_test_decl(test_util_decode_hex)
+munit_void_test_decl(test_util_is_hex_string)
 
 } // namespace ngtcp2
 
-#endif // UTIL_TEST_H
+#endif // !defined(UTIL_TEST_H)

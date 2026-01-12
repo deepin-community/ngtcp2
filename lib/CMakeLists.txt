@@ -67,12 +67,36 @@ set(ngtcp2_SOURCES
   ngtcp2_unreachable.c
   ngtcp2_transport_params.c
   ngtcp2_settings.c
+  ngtcp2_callbacks.c
+  ngtcp2_dcidtr.c
+  ngtcp2_pcg.c
+  ngtcp2_ratelim.c
+  ngtcp2_conn_info.c
 )
 
 set(ngtcp2_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/includes"
   "${CMAKE_CURRENT_BINARY_DIR}/includes"
 )
+
+set(NGTCP2_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(NGTCP2_VERSION_CONFIG "${NGTCP2_GENERATED_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+set(NGTCP2_PROJECT_CONFIG "${NGTCP2_GENERATED_DIR}/${PROJECT_NAME}Config.cmake")
+set(NGTCP2_TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
+set(NGTCP2_CONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
+set(NGTCP2_NAMESPACE "${PROJECT_NAME}::")
+set(NGTCP2_VERSION ${PROJECT_VERSION})
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${NGTCP2_VERSION_CONFIG}" VERSION ${NGTCP2_VERSION} COMPATIBILITY SameMajorVersion
+)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in" "${NGTCP2_PROJECT_CONFIG}" @ONLY)
+
+# Install cmake config files
+install(
+  FILES "${NGTCP2_PROJECT_CONFIG}" "${NGTCP2_VERSION_CONFIG}"
+  DESTINATION "${NGTCP2_CONFIG_INSTALL_DIR}")
 
 # Public shared library
 if(ENABLE_SHARED_LIB)
@@ -83,9 +107,14 @@ if(ENABLE_SHARED_LIB)
     C_VISIBILITY_PRESET hidden
     POSITION_INDEPENDENT_CODE ON
   )
-  target_include_directories(ngtcp2 PUBLIC ${ngtcp2_INCLUDE_DIRS})
+  foreach(include_DIR IN LISTS ngtcp2_INCLUDE_DIRS)
+    target_include_directories(ngtcp2 PUBLIC $<BUILD_INTERFACE:${include_DIR}>)
+  endforeach()
+
+  target_include_directories(ngtcp2 PUBLIC $<INSTALL_INTERFACE:./include>)
 
   install(TARGETS ngtcp2
+    EXPORT ${NGTCP2_TARGETS_EXPORT_NAME}
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
@@ -101,11 +130,21 @@ if(ENABLE_STATIC_LIB)
     C_VISIBILITY_PRESET hidden
   )
   target_compile_definitions(ngtcp2_static PUBLIC "-DNGTCP2_STATICLIB")
-  target_include_directories(ngtcp2_static PUBLIC ${ngtcp2_INCLUDE_DIRS})
+  foreach(include_DIR IN LISTS ngtcp2_INCLUDE_DIRS)
+    target_include_directories(ngtcp2_static PUBLIC $<BUILD_INTERFACE:${include_DIR}>)
+  endforeach()
+
+  target_include_directories(ngtcp2_static PUBLIC $<INSTALL_INTERFACE:./include>)
 
   install(TARGETS ngtcp2_static
+    EXPORT ${NGTCP2_TARGETS_EXPORT_NAME}
     DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 endif()
+
+install(
+  EXPORT "${NGTCP2_TARGETS_EXPORT_NAME}"
+  NAMESPACE "${NGTCP2_NAMESPACE}"
+  DESTINATION "${NGTCP2_CONFIG_INSTALL_DIR}")
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libngtcp2.pc"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")

@@ -46,6 +46,7 @@ libngtcp2.so.16 libngtcp2-16 #MINVER#
  ngtcp2_conn_get_stream_loss_count@Base 1.1.0
  ngtcp2_conn_get_streams_bidi_left@Base 1.1.0
  ngtcp2_conn_get_streams_uni_left@Base 1.1.0
+ ngtcp2_conn_get_timestamp@Base 1.16.0
  ngtcp2_conn_get_tls_alert@Base 1.1.0
  ngtcp2_conn_get_tls_early_data_rejected@Base 1.1.0
  ngtcp2_conn_get_tls_error@Base 1.1.0
@@ -89,6 +90,7 @@ libngtcp2.so.16 libngtcp2-16 #MINVER#
  ngtcp2_conn_tls_early_data_rejected@Base 1.1.0
  ngtcp2_conn_tls_handshake_completed@Base 1.1.0
  ngtcp2_conn_update_pkt_tx_time@Base 1.1.0
+ ngtcp2_conn_write_aggregate_pkt_versioned@Base 1.15.1
  ngtcp2_conn_write_connection_close_versioned@Base 1.1.0
  ngtcp2_conn_write_datagram_versioned@Base 1.1.0
  ngtcp2_conn_write_pkt_versioned@Base 1.1.0

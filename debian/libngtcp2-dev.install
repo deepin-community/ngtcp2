@@ -1,4 +1,5 @@
 usr/include/*/ngtcp2.*
+usr/include/*/ngtcp2_crypto.h
 usr/include/*/version.*
 usr/lib/*/*tcp2.a
 usr/lib/*/*tcp2.so

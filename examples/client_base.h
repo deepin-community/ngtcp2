@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif // HAVE_CONFIG_H
+#endif // defined(HAVE_CONFIG_H)
 
 #include <vector>
 #include <deque>
@@ -191,6 +191,16 @@ struct Config {
   uint32_t initial_pkt_num;
   // pmtud_probes is the array of UDP datagram payload size to probes.
   std::vector<uint16_t> pmtud_probes;
+  // ech_config_list contains ECHConfigList.
+  std::vector<uint8_t> ech_config_list;
+  // ech_config_list_file is a path to a file to read and write
+  // ECHConfigList.
+  const char *ech_config_list_file;
+  // no_gso disables GSO.
+  bool no_gso;
+  // show_stat, if true, displays the connection statistics when the
+  // connection is closed.
+  bool show_stat;
 };
 
 class ClientBase {
@@ -222,4 +232,4 @@ protected:
 void qlog_write_cb(void *user_data, uint32_t flags, const void *data,
                    size_t datalen);
 
-#endif // CLIENT_BASE_H
+#endif // !defined(CLIENT_BASE_H)

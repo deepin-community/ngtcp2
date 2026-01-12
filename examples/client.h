@@ -27,11 +27,11 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif // HAVE_CONFIG_H
+#endif // defined(HAVE_CONFIG_H)
 
 #include <vector>
 #include <deque>
-#include <map>
+#include <unordered_map>
 #include <string_view>
 #include <memory>
 #include <span>
@@ -94,6 +94,11 @@ public:
 
   int send_packet(const Endpoint &ep, const ngtcp2_addr &remote_addr,
                   unsigned int ecn, std::span<const uint8_t> data);
+  std::pair<std::span<const uint8_t>, int>
+  send_packet(const Endpoint &ep, const ngtcp2_addr &remote_addr,
+              unsigned int ecn, std::span<const uint8_t> data, size_t gso_size);
+  int send_packet_or_blocked(const ngtcp2_path &path, unsigned int ecn,
+                             std::span<const uint8_t> data, size_t gso_size);
   int on_stream_close(int64_t stream_id, uint64_t app_error_code);
   int on_extend_max_streams();
   int handle_error();
@@ -128,12 +133,14 @@ public:
   int extend_max_stream_data(int64_t stream_id, uint64_t max_data);
   int stop_sending(int64_t stream_id, uint64_t app_error_code);
   int reset_stream(int64_t stream_id, uint64_t app_error_code);
-  int http_stream_close(int64_t stream_id, uint64_t app_error_code);
+  void http_stream_close(int64_t stream_id, uint64_t app_error_code);
 
-  void on_send_blocked(const Endpoint &ep, const ngtcp2_addr &remote_addr,
-                       unsigned int ecn, size_t datalen);
+  void on_send_blocked(const ngtcp2_path &path, unsigned int ecn,
+                       std::span<const uint8_t> data, size_t gso_size);
   void start_wev_endpoint(const Endpoint &ep);
   int send_blocked_packet();
+  ngtcp2_ssize write_pkt(ngtcp2_path *path, ngtcp2_pkt_info *pi, uint8_t *dest,
+                         size_t destlen, ngtcp2_tstamp ts);
 
   const std::vector<uint32_t> &get_offered_versions() const;
 
@@ -152,7 +159,7 @@ private:
   ev_timer delay_stream_timer_;
   ev_signal sigintev_;
   struct ev_loop *loop_;
-  std::map<int64_t, std::unique_ptr<Stream>> streams_;
+  std::unordered_map<int64_t, std::unique_ptr<Stream>> streams_;
   std::vector<uint32_t> offered_versions_;
   nghttp3_conn *httpconn_;
   // addr_ is the server host address.
@@ -172,6 +179,7 @@ private:
   // handshake_confirmed_ gets true after handshake has been
   // confirmed.
   bool handshake_confirmed_;
+  bool no_gso_;
 
   struct {
     bool send_blocked;
@@ -180,10 +188,11 @@ private:
       const Endpoint *endpoint;
       Address remote_addr;
       unsigned int ecn;
-      size_t datalen;
+      std::span<const uint8_t> data;
+      size_t gso_size;
     } blocked;
     std::array<uint8_t, 64_k> data;
   } tx_;
 };
 
-#endif // CLIENT_H
+#endif // !defined(CLIENT_H)

@@ -27,9 +27,16 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif /* HAVE_CONFIG_H */
+#endif /* defined(HAVE_CONFIG_H) */
 
 #include <ngtcp2/ngtcp2.h>
+
+/* NGTCP2_DEFAULT_GLITCH_RATELIM_BURST is the maximum number of tokens
+   in glitch rate limiter.  It is also the initial value. */
+#define NGTCP2_DEFAULT_GLITCH_RATELIM_BURST 1000
+/* NGTCP2_DEFAULT_GLITCH_RATELIM_RATE is the rate of tokens generated
+   per second for glitch rate limiter. */
+#define NGTCP2_DEFAULT_GLITCH_RATELIM_RATE 33
 
 /*
  * ngtcp2_settings_convert_to_latest converts |src| of version
@@ -70,4 +77,4 @@ void ngtcp2_settings_convert_to_old(int settings_version, ngtcp2_settings *dest,
  */
 size_t ngtcp2_settingslen_version(int settings_version);
 
-#endif /* NGTCP2_SETTINGS_H */
+#endif /* !defined(NGTCP2_SETTINGS_H) */

@@ -49,7 +49,10 @@ TLSServerContext::TLSServerContext() : cred_{nullptr}, session_ticket_key_{} {
 
 TLSServerContext::~TLSServerContext() {
   gnutls_anti_replay_deinit(anti_replay_);
-  gnutls_free(session_ticket_key_.data);
+  if (session_ticket_key_.data) {
+    gnutls_memset(session_ticket_key_.data, 0, session_ticket_key_.size);
+    gnutls_free(session_ticket_key_.data);
+  }
   gnutls_certificate_free_credentials(cred_);
 }
 
@@ -81,7 +84,7 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
   }
 
   if (auto rv = gnutls_certificate_set_x509_key_file(
-          cred_, cert_file, private_key_file, GNUTLS_X509_FMT_PEM);
+        cred_, cert_file, private_key_file, GNUTLS_X509_FMT_PEM);
       rv != 0) {
     std::cerr << "gnutls_certificate_set_x509_key_file failed: "
               << gnutls_strerror(rv) << std::endl;

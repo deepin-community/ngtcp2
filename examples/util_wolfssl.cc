@@ -49,6 +49,11 @@ int generate_secure_random(std::span<uint8_t> data) {
   return 0;
 }
 
+std::optional<HPKEPrivateKey>
+read_hpke_private_key_pem(const std::string_view &filename) {
+  return {};
+}
+
 int generate_secret(std::span<uint8_t> secret) {
   std::array<uint8_t, 16> rand;
 
@@ -61,7 +66,7 @@ int generate_secret(std::span<uint8_t> secret) {
     return -1;
   }
 
-  unsigned int mdlen = secret.size();
+  auto mdlen = static_cast<unsigned int>(secret.size());
   if (!wolfSSL_EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr) ||
       !wolfSSL_EVP_DigestUpdate(ctx, rand.data(), rand.size()) ||
       !wolfSSL_EVP_DigestFinal_ex(ctx, secret.data(), &mdlen)) {
@@ -73,9 +78,9 @@ int generate_secret(std::span<uint8_t> secret) {
   return 0;
 }
 
-std::optional<std::string> read_pem(const std::string_view &filename,
-                                    const std::string_view &name,
-                                    const std::string_view &type) {
+std::optional<std::vector<uint8_t>> read_pem(const std::string_view &filename,
+                                             const std::string_view &name,
+                                             const std::string_view &type) {
   auto f = wolfSSL_BIO_new_file(filename.data(), "r");
   if (f == nullptr) {
     std::cerr << "Could not open " << name << " file " << filename << std::endl;
@@ -103,7 +108,7 @@ std::optional<std::string> read_pem(const std::string_view &filename,
     return {};
   }
 
-  return std::string{data, data + datalen};
+  return {{data, data + datalen}};
 }
 
 int write_pem(const std::string_view &filename, const std::string_view &name,
@@ -114,7 +119,8 @@ int write_pem(const std::string_view &filename, const std::string_view &name,
     return -1;
   }
 
-  wolfSSL_PEM_write_bio(f, type.data(), "", data.data(), data.size());
+  wolfSSL_PEM_write_bio(f, type.data(), "", data.data(),
+                        static_cast<long>(data.size()));
   wolfSSL_BIO_free(f);
 
   return 0;
@@ -125,7 +131,13 @@ const char *crypto_default_ciphers() {
          "SHA256:TLS_AES_128_CCM_SHA256";
 }
 
-const char *crypto_default_groups() { return "X25519:P-256:P-384:P-521"; }
+const char *crypto_default_groups() {
+  return "X25519:P-256:P-384:P-521"
+#ifdef WOLFSSL_HAVE_MLKEM
+         ":X25519_ML_KEM_768"
+#endif // WOLFSSL_HAVE_MLKEM
+    ;
+}
 
 } // namespace util
 

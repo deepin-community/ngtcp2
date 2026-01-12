@@ -29,6 +29,7 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
+#include <algorithm>
 
 #include <ngtcp2/ngtcp2_crypto_quictls.h>
 
@@ -66,8 +67,6 @@ int alpn_select_proto_h3_cb(SSL *ssl, const unsigned char **out,
                             unsigned int inlen, void *arg) {
   auto conn_ref = static_cast<ngtcp2_crypto_conn_ref *>(SSL_get_app_data(ssl));
   auto h = static_cast<HandlerBase *>(conn_ref->user_data);
-  const uint8_t *alpn;
-  size_t alpnlen;
   // This should be the negotiated version, but we have not set the
   // negotiated version when this callback is called.
   auto version = ngtcp2_conn_get_client_chosen_version(h->conn());
@@ -75,8 +74,6 @@ int alpn_select_proto_h3_cb(SSL *ssl, const unsigned char **out,
   switch (version) {
   case NGTCP2_PROTO_VER_V1:
   case NGTCP2_PROTO_VER_V2:
-    alpn = H3_ALPN_V1;
-    alpnlen = str_size(H3_ALPN_V1);
     break;
   default:
     if (!config.quiet) {
@@ -86,16 +83,17 @@ int alpn_select_proto_h3_cb(SSL *ssl, const unsigned char **out,
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
-  for (auto p = in, end = in + inlen; p + alpnlen <= end; p += *p + 1) {
-    if (std::equal(alpn, alpn + alpnlen, p)) {
-      *out = p + 1;
-      *outlen = *p;
+  for (auto s = std::span{in, inlen}; s.size() >= H3_ALPN_V1.size();
+       s = s.subspan(s[0] + 1)) {
+    if (std::ranges::equal(H3_ALPN_V1, s.first(H3_ALPN_V1.size()))) {
+      *out = &s[1];
+      *outlen = s[0];
       return SSL_TLSEXT_ERR_OK;
     }
   }
 
   if (!config.quiet) {
-    std::cerr << "Client did not present ALPN " << &alpn[1] << std::endl;
+    std::cerr << "Client did not present ALPN " << &H3_ALPN_V1[1] << std::endl;
   }
 
   return SSL_TLSEXT_ERR_ALERT_FATAL;
@@ -108,8 +106,6 @@ int alpn_select_proto_hq_cb(SSL *ssl, const unsigned char **out,
                             unsigned int inlen, void *arg) {
   auto conn_ref = static_cast<ngtcp2_crypto_conn_ref *>(SSL_get_app_data(ssl));
   auto h = static_cast<HandlerBase *>(conn_ref->user_data);
-  const uint8_t *alpn;
-  size_t alpnlen;
   // This should be the negotiated version, but we have not set the
   // negotiated version when this callback is called.
   auto version = ngtcp2_conn_get_client_chosen_version(h->conn());
@@ -117,8 +113,6 @@ int alpn_select_proto_hq_cb(SSL *ssl, const unsigned char **out,
   switch (version) {
   case NGTCP2_PROTO_VER_V1:
   case NGTCP2_PROTO_VER_V2:
-    alpn = HQ_ALPN_V1;
-    alpnlen = str_size(HQ_ALPN_V1);
     break;
   default:
     if (!config.quiet) {
@@ -128,16 +122,17 @@ int alpn_select_proto_hq_cb(SSL *ssl, const unsigned char **out,
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
-  for (auto p = in, end = in + inlen; p + alpnlen <= end; p += *p + 1) {
-    if (std::equal(alpn, alpn + alpnlen, p)) {
-      *out = p + 1;
-      *outlen = *p;
+  for (auto s = std::span{in, inlen}; s.size() >= HQ_ALPN_V1.size();
+       s = s.subspan(s[0] + 1)) {
+    if (std::ranges::equal(HQ_ALPN_V1, s.first(HQ_ALPN_V1.size()))) {
+      *out = &s[1];
+      *outlen = s[0];
       return SSL_TLSEXT_ERR_OK;
     }
   }
 
   if (!config.quiet) {
-    std::cerr << "Client did not present ALPN " << &alpn[1] << std::endl;
+    std::cerr << "Client did not present ALPN " << &HQ_ALPN_V1[1] << std::endl;
   }
 
   return SSL_TLSEXT_ERR_ALERT_FATAL;
@@ -184,7 +179,7 @@ SSL_TICKET_RETURN decrypt_ticket_cb(SSL *ssl, SSL_SESSION *session,
   size_t verlen;
 
   if (!SSL_SESSION_get0_ticket_appdata(
-          session, reinterpret_cast<void **>(&pver), &verlen) ||
+        session, reinterpret_cast<void **>(&pver), &verlen) ||
       verlen != sizeof(ver)) {
     switch (status) {
     case SSL_TICKET_SUCCESS:
@@ -219,7 +214,7 @@ SSL_TICKET_RETURN decrypt_ticket_cb(SSL *ssl, SSL_SESSION *session,
   }
 }
 } // namespace
-#endif // !LIBRESSL_VERSION_NUMBER
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
 
 int TLSServerContext::init(const char *private_key_file, const char *cert_file,
                            AppProtocol app_proto) {
@@ -227,7 +222,7 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
 
   ssl_ctx_ = SSL_CTX_new(TLS_server_method());
   if (!ssl_ctx_) {
-    std::cerr << "SSSL_CTX_new: " << ERR_error_string(ERR_get_error(), nullptr)
+    std::cerr << "SSL_CTX_new: " << ERR_error_string(ERR_get_error(), nullptr)
               << std::endl;
     return -1;
   }
@@ -245,8 +240,8 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
                             SSL_OP_CIPHER_SERVER_PREFERENCE
 #ifndef LIBRESSL_VERSION_NUMBER
                             | SSL_OP_NO_ANTI_REPLAY
-#endif // !LIBRESSL_VERSION_NUMBER
-      ;
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
+    ;
 
   SSL_CTX_set_options(ssl_ctx_, ssl_opts);
 
@@ -298,14 +293,14 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
   if (config.verify_client) {
     SSL_CTX_set_verify(ssl_ctx_,
                        SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE |
-                           SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                         SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                        verify_cb);
   }
 
 #ifndef LIBRESSL_VERSION_NUMBER
   SSL_CTX_set_session_ticket_cb(ssl_ctx_, gen_ticket_cb, decrypt_ticket_cb,
                                 nullptr);
-#endif // !LIBRESSL_VERSION_NUMBER
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
 
   return 0;
 }
@@ -314,7 +309,7 @@ extern std::ofstream keylog_file;
 
 namespace {
 void keylog_callback(const SSL *ssl, const char *line) {
-  keylog_file.write(line, strlen(line));
+  keylog_file.write(line, static_cast<std::streamsize>(strlen(line)));
   keylog_file.put('\n');
   keylog_file.flush();
 }

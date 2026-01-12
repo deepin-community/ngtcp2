@@ -117,7 +117,8 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES = libngtcp2_crypto_quictls.pc
+CONFIG_CLEAN_FILES = libngtcp2_crypto_libressl.pc \
+	libngtcp2_crypto_quictls.pc
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -148,20 +149,39 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libngtcp2_crypto_quictls_la_DEPENDENCIES =  \
-	$(top_builddir)/lib/libngtcp2.la
+@HAVE_LIBRESSL_TRUE@libngtcp2_crypto_libressl_la_DEPENDENCIES =  \
+@HAVE_LIBRESSL_TRUE@	$(top_builddir)/lib/libngtcp2.la
+am__libngtcp2_crypto_libressl_la_SOURCES_DIST = quictls.c ../shared.c \
+	../shared.h
 am__dirstamp = $(am__leading_dot)dirstamp
-am_libngtcp2_crypto_quictls_la_OBJECTS = quictls.lo ../shared.lo
-libngtcp2_crypto_quictls_la_OBJECTS =  \
-	$(am_libngtcp2_crypto_quictls_la_OBJECTS)
+@HAVE_LIBRESSL_TRUE@am_libngtcp2_crypto_libressl_la_OBJECTS =  \
+@HAVE_LIBRESSL_TRUE@	quictls.lo ../shared.lo
+libngtcp2_crypto_libressl_la_OBJECTS =  \
+	$(am_libngtcp2_crypto_libressl_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+libngtcp2_crypto_libressl_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libngtcp2_crypto_libressl_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@HAVE_LIBRESSL_TRUE@am_libngtcp2_crypto_libressl_la_rpath = -rpath \
+@HAVE_LIBRESSL_TRUE@	$(libdir)
+@HAVE_LIBRESSL_FALSE@libngtcp2_crypto_quictls_la_DEPENDENCIES =  \
+@HAVE_LIBRESSL_FALSE@	$(top_builddir)/lib/libngtcp2.la
+am__libngtcp2_crypto_quictls_la_SOURCES_DIST = quictls.c ../shared.c \
+	../shared.h
+@HAVE_LIBRESSL_FALSE@am_libngtcp2_crypto_quictls_la_OBJECTS =  \
+@HAVE_LIBRESSL_FALSE@	quictls.lo ../shared.lo
+libngtcp2_crypto_quictls_la_OBJECTS =  \
+	$(am_libngtcp2_crypto_quictls_la_OBJECTS)
 libngtcp2_crypto_quictls_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(libngtcp2_crypto_quictls_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@HAVE_LIBRESSL_FALSE@am_libngtcp2_crypto_quictls_la_rpath = -rpath \
+@HAVE_LIBRESSL_FALSE@	$(libdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -197,8 +217,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libngtcp2_crypto_quictls_la_SOURCES)
-DIST_SOURCES = $(libngtcp2_crypto_quictls_la_SOURCES)
+SOURCES = $(libngtcp2_crypto_libressl_la_SOURCES) \
+	$(libngtcp2_crypto_quictls_la_SOURCES)
+DIST_SOURCES = $(am__libngtcp2_crypto_libressl_la_SOURCES_DIST) \
+	$(am__libngtcp2_crypto_quictls_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -223,6 +245,7 @@ am__define_uniq_tagged_files = \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
 am__DIST_COMMON = $(srcdir)/Makefile.in \
+	$(srcdir)/libngtcp2_crypto_libressl.pc.in \
 	$(srcdir)/libngtcp2_crypto_quictls.pc.in $(top_srcdir)/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
@@ -243,6 +266,12 @@ CPPFLAGS = @CPPFLAGS@
 CRYPTO_GNUTLS_LT_AGE = @CRYPTO_GNUTLS_LT_AGE@
 CRYPTO_GNUTLS_LT_CURRENT = @CRYPTO_GNUTLS_LT_CURRENT@
 CRYPTO_GNUTLS_LT_REVISION = @CRYPTO_GNUTLS_LT_REVISION@
+CRYPTO_LIBRESSL_LT_AGE = @CRYPTO_LIBRESSL_LT_AGE@
+CRYPTO_LIBRESSL_LT_CURRENT = @CRYPTO_LIBRESSL_LT_CURRENT@
+CRYPTO_LIBRESSL_LT_REVISION = @CRYPTO_LIBRESSL_LT_REVISION@
+CRYPTO_OSSL_LT_AGE = @CRYPTO_OSSL_LT_AGE@
+CRYPTO_OSSL_LT_CURRENT = @CRYPTO_OSSL_LT_CURRENT@
+CRYPTO_OSSL_LT_REVISION = @CRYPTO_OSSL_LT_REVISION@
 CRYPTO_QUICTLS_LT_AGE = @CRYPTO_QUICTLS_LT_AGE@
 CRYPTO_QUICTLS_LT_CURRENT = @CRYPTO_QUICTLS_LT_CURRENT@
 CRYPTO_QUICTLS_LT_REVISION = @CRYPTO_QUICTLS_LT_REVISION@
@@ -270,6 +299,8 @@ ETAGS = @ETAGS@
 EXAMPLES_BORINGSSL = @EXAMPLES_BORINGSSL@
 EXAMPLES_ENABLED = @EXAMPLES_ENABLED@
 EXAMPLES_GNUTLS = @EXAMPLES_GNUTLS@
+EXAMPLES_LIBRESSL = @EXAMPLES_LIBRESSL@
+EXAMPLES_OSSL = @EXAMPLES_OSSL@
 EXAMPLES_PICOTLS = @EXAMPLES_PICOTLS@
 EXAMPLES_QUICTLS = @EXAMPLES_QUICTLS@
 EXAMPLES_WOLFSSL = @EXAMPLES_WOLFSSL@
@@ -277,6 +308,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -422,16 +454,25 @@ AM_CPPFLAGS = -I$(top_srcdir)/lib/includes -I$(top_builddir)/lib/includes \
 
 AM_LDFLAGS = ${LIBTOOL_LDFLAGS}
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libngtcp2_crypto_quictls.pc
+@HAVE_LIBRESSL_FALSE@pkgconfig_DATA = libngtcp2_crypto_quictls.pc
+@HAVE_LIBRESSL_TRUE@pkgconfig_DATA = libngtcp2_crypto_libressl.pc
+@HAVE_LIBRESSL_FALSE@lib_LTLIBRARIES = libngtcp2_crypto_quictls.la
+@HAVE_LIBRESSL_TRUE@lib_LTLIBRARIES = libngtcp2_crypto_libressl.la
+@HAVE_LIBRESSL_TRUE@libngtcp2_crypto_libressl_la_SOURCES = quictls.c ../shared.c ../shared.h
+@HAVE_LIBRESSL_TRUE@libngtcp2_crypto_libressl_la_LDFLAGS = -no-undefined \
+@HAVE_LIBRESSL_TRUE@	-version-info $(CRYPTO_LIBRESSL_LT_CURRENT):$(CRYPTO_LIBRESSL_LT_REVISION):$(CRYPTO_LIBRESSL_LT_AGE)
+
+@HAVE_LIBRESSL_TRUE@libngtcp2_crypto_libressl_la_LIBADD = $(top_builddir)/lib/libngtcp2.la \
+@HAVE_LIBRESSL_TRUE@	@OPENSSL_LIBS@
+
+@HAVE_LIBRESSL_FALSE@libngtcp2_crypto_quictls_la_SOURCES = quictls.c ../shared.c ../shared.h
+@HAVE_LIBRESSL_FALSE@libngtcp2_crypto_quictls_la_LDFLAGS = -no-undefined \
+@HAVE_LIBRESSL_FALSE@	-version-info $(CRYPTO_QUICTLS_LT_CURRENT):$(CRYPTO_QUICTLS_LT_REVISION):$(CRYPTO_QUICTLS_LT_AGE)
+
+@HAVE_LIBRESSL_FALSE@libngtcp2_crypto_quictls_la_LIBADD = $(top_builddir)/lib/libngtcp2.la \
+@HAVE_LIBRESSL_FALSE@	@OPENSSL_LIBS@
+
 DISTCLEANFILES = $(pkgconfig_DATA)
-lib_LTLIBRARIES = libngtcp2_crypto_quictls.la
-libngtcp2_crypto_quictls_la_SOURCES = quictls.c ../shared.c ../shared.h
-libngtcp2_crypto_quictls_la_LDFLAGS = -no-undefined \
-	-version-info $(CRYPTO_QUICTLS_LT_CURRENT):$(CRYPTO_QUICTLS_LT_REVISION):$(CRYPTO_QUICTLS_LT_AGE)
-
-libngtcp2_crypto_quictls_la_LIBADD = $(top_builddir)/lib/libngtcp2.la \
-	@OPENSSL_LIBS@
-
 all: all-am
 
 .SUFFIXES:
@@ -465,6 +506,8 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+libngtcp2_crypto_libressl.pc: $(top_builddir)/config.status $(srcdir)/libngtcp2_crypto_libressl.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 libngtcp2_crypto_quictls.pc: $(top_builddir)/config.status $(srcdir)/libngtcp2_crypto_quictls.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
@@ -510,8 +553,11 @@ clean-libLTLIBRARIES:
 	@: > ../$(DEPDIR)/$(am__dirstamp)
 ../shared.lo: ../$(am__dirstamp) ../$(DEPDIR)/$(am__dirstamp)
 
+libngtcp2_crypto_libressl.la: $(libngtcp2_crypto_libressl_la_OBJECTS) $(libngtcp2_crypto_libressl_la_DEPENDENCIES) $(EXTRA_libngtcp2_crypto_libressl_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libngtcp2_crypto_libressl_la_LINK) $(am_libngtcp2_crypto_libressl_la_rpath) $(libngtcp2_crypto_libressl_la_OBJECTS) $(libngtcp2_crypto_libressl_la_LIBADD) $(LIBS)
+
 libngtcp2_crypto_quictls.la: $(libngtcp2_crypto_quictls_la_OBJECTS) $(libngtcp2_crypto_quictls_la_DEPENDENCIES) $(EXTRA_libngtcp2_crypto_quictls_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libngtcp2_crypto_quictls_la_LINK) -rpath $(libdir) $(libngtcp2_crypto_quictls_la_OBJECTS) $(libngtcp2_crypto_quictls_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libngtcp2_crypto_quictls_la_LINK) $(am_libngtcp2_crypto_quictls_la_rpath) $(libngtcp2_crypto_quictls_la_OBJECTS) $(libngtcp2_crypto_quictls_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

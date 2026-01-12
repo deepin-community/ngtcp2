@@ -6,21 +6,6 @@
 /* Define to 1 to enable debug output. */
 #undef DEBUGBUILD
 
-/* Define to 1 in order to build examples/{bsslclient,bsslserver} */
-#undef ENABLE_EXAMPLE_BORINGSSL
-
-/* Define to 1 in order to build examples/{gtlsclient,gtlsserver} */
-#undef ENABLE_EXAMPLE_GNUTLS
-
-/* Define to 1 in order to build examples/{ptlsclient,ptlsserver} */
-#undef ENABLE_EXAMPLE_PICOTLS
-
-/* Define to 1 in order to build examples/{qtlsclient,qtlsserver} */
-#undef ENABLE_EXAMPLE_QUICTLS
-
-/* Define to 1 in order to build examples/{wsslclient,wsslserver} */
-#undef ENABLE_EXAMPLE_WOLFSSL
-
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 

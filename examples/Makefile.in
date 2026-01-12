@@ -105,7 +105,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 noinst_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4) $(am__EXEEXT_5)
+	$(am__EXEEXT_4) $(am__EXEEXT_5) $(am__EXEEXT_6)
 @ENABLE_EXAMPLE_QUICTLS_TRUE@am__append_1 = qtlsclient qtlsserver \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlssimpleclient
 
@@ -113,6 +113,7 @@ noinst_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@am__append_3 = bsslclient bsslserver
 @ENABLE_EXAMPLE_PICOTLS_TRUE@am__append_4 = ptlsclient ptlsserver
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@am__append_5 = wsslclient wsslserver h09wsslclient h09wsslserver
+@ENABLE_EXAMPLE_OSSL_TRUE@am__append_6 = osslclient osslserver
 check_PROGRAMS = examplestest$(EXEEXT)
 TESTS = examplestest$(EXEEXT)
 subdir = examples
@@ -143,6 +144,8 @@ CONFIG_CLEAN_VPATH_FILES =
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslserver$(EXEEXT) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	h09wsslclient$(EXEEXT) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	h09wsslserver$(EXEEXT)
+@ENABLE_EXAMPLE_OSSL_TRUE@am__EXEEXT_6 = osslclient$(EXEEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslserver$(EXEEXT)
 PROGRAMS = $(noinst_PROGRAMS)
 am__bsslclient_SOURCES_DIST = client.cc client.h client_base.cc \
 	client_base.h tls_client_context.h tls_client_session.h \
@@ -165,10 +168,9 @@ am__objects_1 = bsslclient-client_base.$(OBJEXT) \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	bsslclient-util_openssl.$(OBJEXT)
 bsslclient_OBJECTS = $(am_bsslclient_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/lib/libngtcp2.la \
-	$(top_builddir)/third-party/libhttp-parser.la
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@bsslclient_DEPENDENCIES =  \
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(am__DEPENDENCIES_1) \
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(top_builddir)/crypto/boringssl/libngtcp2_crypto_boringssl.a
+	$(top_builddir)/third-party/liburlparse.la
+@ENABLE_EXAMPLE_BORINGSSL_TRUE@bsslclient_DEPENDENCIES = $(top_builddir)/crypto/boringssl/libngtcp2_crypto_boringssl.a \
+@ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -176,14 +178,15 @@ am__v_lt_1 =
 am__bsslserver_SOURCES_DIST = server.cc server.h server_base.cc \
 	server_base.h tls_server_context.h tls_server_session.h \
 	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
-	http.cc http.h network.h tls_server_context_boringssl.cc \
-	tls_server_context_boringssl.h tls_server_session_boringssl.cc \
-	tls_server_session_boringssl.h tls_session_base_quictls.cc \
-	tls_session_base_quictls.h tls_shared_boringssl.cc \
-	tls_shared_boringssl.h util_openssl.cc
+	http.cc http.h siphash.cc siphash.h network.h \
+	tls_server_context_boringssl.cc tls_server_context_boringssl.h \
+	tls_server_session_boringssl.cc tls_server_session_boringssl.h \
+	tls_session_base_quictls.cc tls_session_base_quictls.h \
+	tls_shared_boringssl.cc tls_shared_boringssl.h util_openssl.cc
 am__objects_2 = bsslserver-server_base.$(OBJEXT) \
 	bsslserver-debug.$(OBJEXT) bsslserver-util.$(OBJEXT) \
-	bsslserver-shared.$(OBJEXT) bsslserver-http.$(OBJEXT)
+	bsslserver-shared.$(OBJEXT) bsslserver-http.$(OBJEXT) \
+	bsslserver-siphash.$(OBJEXT)
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@am_bsslserver_OBJECTS =  \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	bsslserver-server.$(OBJEXT) \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(am__objects_2) \
@@ -193,14 +196,15 @@ am__objects_2 = bsslserver-server_base.$(OBJEXT) \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	bsslserver-tls_shared_boringssl.$(OBJEXT) \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	bsslserver-util_openssl.$(OBJEXT)
 bsslserver_OBJECTS = $(am_bsslserver_OBJECTS)
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@am__DEPENDENCIES_2 =  \
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(am__DEPENDENCIES_1) \
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(top_builddir)/crypto/boringssl/libngtcp2_crypto_boringssl.a
+@ENABLE_EXAMPLE_BORINGSSL_TRUE@am__DEPENDENCIES_2 = $(top_builddir)/crypto/boringssl/libngtcp2_crypto_boringssl.a \
+@ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(am__DEPENDENCIES_1)
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@bsslserver_DEPENDENCIES =  \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(am__DEPENDENCIES_2)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_examplestest_OBJECTS = examplestest-examplestest.$(OBJEXT) \
 	examplestest-util_test.$(OBJEXT) examplestest-util.$(OBJEXT) \
+	examplestest-siphash_test.$(OBJEXT) \
+	examplestest-siphash.$(OBJEXT) \
 	$(top_builddir)/tests/munit/examplestest-munit.$(OBJEXT)
 examplestest_OBJECTS = $(am_examplestest_OBJECTS)
 examplestest_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -228,13 +232,15 @@ gtlsclient_OBJECTS = $(am_gtlsclient_OBJECTS)
 am__gtlsserver_SOURCES_DIST = server.cc server.h server_base.cc \
 	server_base.h tls_server_context.h tls_server_session.h \
 	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
-	http.cc http.h network.h tls_server_context_gnutls.cc \
-	tls_server_context_gnutls.h tls_server_session_gnutls.cc \
-	tls_server_session_gnutls.h tls_session_base_gnutls.cc \
-	tls_session_base_gnutls.h util_gnutls.cc
+	http.cc http.h siphash.cc siphash.h network.h \
+	tls_server_context_gnutls.cc tls_server_context_gnutls.h \
+	tls_server_session_gnutls.cc tls_server_session_gnutls.h \
+	tls_session_base_gnutls.cc tls_session_base_gnutls.h \
+	util_gnutls.cc
 am__objects_4 = gtlsserver-server_base.$(OBJEXT) \
 	gtlsserver-debug.$(OBJEXT) gtlsserver-util.$(OBJEXT) \
-	gtlsserver-shared.$(OBJEXT) gtlsserver-http.$(OBJEXT)
+	gtlsserver-shared.$(OBJEXT) gtlsserver-http.$(OBJEXT) \
+	gtlsserver-siphash.$(OBJEXT)
 @ENABLE_EXAMPLE_GNUTLS_TRUE@am_gtlsserver_OBJECTS =  \
 @ENABLE_EXAMPLE_GNUTLS_TRUE@	gtlsserver-server.$(OBJEXT) \
 @ENABLE_EXAMPLE_GNUTLS_TRUE@	$(am__objects_4) \
@@ -281,14 +287,15 @@ h09wsslclient_OBJECTS = $(am_h09wsslclient_OBJECTS)
 am__h09wsslserver_SOURCES_DIST = h09server.cc h09server.h \
 	server_base.cc server_base.h tls_server_context.h \
 	tls_server_session.h template.h debug.cc debug.h util.cc \
-	util.h shared.cc shared.h http.cc http.h network.h \
-	tls_server_context_wolfssl.cc tls_server_context_wolfssl.h \
-	tls_server_session_wolfssl.cc tls_server_session_wolfssl.h \
-	tls_session_base_wolfssl.cc tls_session_base_wolfssl.h \
-	util_wolfssl.cc
+	util.h shared.cc shared.h http.cc http.h siphash.cc siphash.h \
+	network.h tls_server_context_wolfssl.cc \
+	tls_server_context_wolfssl.h tls_server_session_wolfssl.cc \
+	tls_server_session_wolfssl.h tls_session_base_wolfssl.cc \
+	tls_session_base_wolfssl.h util_wolfssl.cc
 am__objects_6 = h09wsslserver-server_base.$(OBJEXT) \
 	h09wsslserver-debug.$(OBJEXT) h09wsslserver-util.$(OBJEXT) \
-	h09wsslserver-shared.$(OBJEXT) h09wsslserver-http.$(OBJEXT)
+	h09wsslserver-shared.$(OBJEXT) h09wsslserver-http.$(OBJEXT) \
+	h09wsslserver-siphash.$(OBJEXT)
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@am_h09wsslserver_OBJECTS = h09wsslserver-h09server.$(OBJEXT) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(am__objects_6) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	h09wsslserver-tls_server_context_wolfssl.$(OBJEXT) \
@@ -297,7 +304,53 @@ am__objects_6 = h09wsslserver-server_base.$(OBJEXT) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	h09wsslserver-util_wolfssl.$(OBJEXT)
 h09wsslserver_OBJECTS = $(am_h09wsslserver_OBJECTS)
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@h09wsslserver_DEPENDENCIES =  \
-@ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(am__DEPENDENCIES_4)
+@ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(am__DEPENDENCIES_4) \
+@ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(top_builddir)/third-party/libhttp-parser.la
+am__osslclient_SOURCES_DIST = client.cc client.h client_base.cc \
+	client_base.h tls_client_context.h tls_client_session.h \
+	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
+	network.h tls_client_context_ossl.cc tls_client_context_ossl.h \
+	tls_client_session_ossl.cc tls_client_session_ossl.h \
+	tls_session_base_ossl.cc tls_session_base_ossl.h \
+	util_openssl.cc
+am__objects_7 = osslclient-client_base.$(OBJEXT) \
+	osslclient-debug.$(OBJEXT) osslclient-util.$(OBJEXT) \
+	osslclient-shared.$(OBJEXT)
+@ENABLE_EXAMPLE_OSSL_TRUE@am_osslclient_OBJECTS =  \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslclient-client.$(OBJEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	$(am__objects_7) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslclient-tls_client_context_ossl.$(OBJEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslclient-tls_client_session_ossl.$(OBJEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslclient-tls_session_base_ossl.$(OBJEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslclient-util_openssl.$(OBJEXT)
+osslclient_OBJECTS = $(am_osslclient_OBJECTS)
+@ENABLE_EXAMPLE_OSSL_TRUE@osslclient_DEPENDENCIES =  \
+@ENABLE_EXAMPLE_OSSL_TRUE@	$(am__DEPENDENCIES_1) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	$(top_builddir)/crypto/ossl/libngtcp2_crypto_ossl.la
+am__osslserver_SOURCES_DIST = server.cc server.h server_base.cc \
+	server_base.h tls_server_context.h tls_server_session.h \
+	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
+	http.cc http.h siphash.cc siphash.h network.h \
+	tls_server_context_ossl.cc tls_server_context_ossl.h \
+	tls_server_session_ossl.cc tls_server_session_ossl.h \
+	tls_session_base_ossl.cc tls_session_base_ossl.h \
+	util_openssl.cc
+am__objects_8 = osslserver-server_base.$(OBJEXT) \
+	osslserver-debug.$(OBJEXT) osslserver-util.$(OBJEXT) \
+	osslserver-shared.$(OBJEXT) osslserver-http.$(OBJEXT) \
+	osslserver-siphash.$(OBJEXT)
+@ENABLE_EXAMPLE_OSSL_TRUE@am_osslserver_OBJECTS =  \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslserver-server.$(OBJEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	$(am__objects_8) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslserver-tls_server_context_ossl.$(OBJEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslserver-tls_server_session_ossl.$(OBJEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslserver-tls_session_base_ossl.$(OBJEXT) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	osslserver-util_openssl.$(OBJEXT)
+osslserver_OBJECTS = $(am_osslserver_OBJECTS)
+@ENABLE_EXAMPLE_OSSL_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1) \
+@ENABLE_EXAMPLE_OSSL_TRUE@	$(top_builddir)/crypto/ossl/libngtcp2_crypto_ossl.la
+@ENABLE_EXAMPLE_OSSL_TRUE@osslserver_DEPENDENCIES =  \
+@ENABLE_EXAMPLE_OSSL_TRUE@	$(am__DEPENDENCIES_5)
 am__ptlsclient_SOURCES_DIST = client.cc client.h client_base.cc \
 	client_base.h tls_client_context.h tls_client_session.h \
 	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
@@ -306,12 +359,12 @@ am__ptlsclient_SOURCES_DIST = client.cc client.h client_base.cc \
 	tls_client_session_picotls.h tls_session_base_picotls.cc \
 	tls_session_base_picotls.h tls_shared_picotls.cc \
 	tls_shared_picotls.h util_openssl.cc
-am__objects_7 = ptlsclient-client_base.$(OBJEXT) \
+am__objects_9 = ptlsclient-client_base.$(OBJEXT) \
 	ptlsclient-debug.$(OBJEXT) ptlsclient-util.$(OBJEXT) \
 	ptlsclient-shared.$(OBJEXT)
 @ENABLE_EXAMPLE_PICOTLS_TRUE@am_ptlsclient_OBJECTS =  \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsclient-client.$(OBJEXT) \
-@ENABLE_EXAMPLE_PICOTLS_TRUE@	$(am__objects_7) \
+@ENABLE_EXAMPLE_PICOTLS_TRUE@	$(am__objects_9) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsclient-tls_client_context_picotls.$(OBJEXT) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsclient-tls_client_session_picotls.$(OBJEXT) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsclient-tls_session_base_picotls.$(OBJEXT) \
@@ -324,28 +377,29 @@ ptlsclient_OBJECTS = $(am_ptlsclient_OBJECTS)
 am__ptlsserver_SOURCES_DIST = server.cc server.h server_base.cc \
 	server_base.h tls_server_context.h tls_server_session.h \
 	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
-	http.cc http.h network.h tls_server_context_picotls.cc \
-	tls_server_context_picotls.h tls_server_session_picotls.cc \
-	tls_server_session_picotls.h tls_session_base_picotls.cc \
-	tls_session_base_picotls.h tls_shared_picotls.cc \
-	tls_shared_picotls.h util_openssl.cc
-am__objects_8 = ptlsserver-server_base.$(OBJEXT) \
+	http.cc http.h siphash.cc siphash.h network.h \
+	tls_server_context_picotls.cc tls_server_context_picotls.h \
+	tls_server_session_picotls.cc tls_server_session_picotls.h \
+	tls_session_base_picotls.cc tls_session_base_picotls.h \
+	tls_shared_picotls.cc tls_shared_picotls.h util_openssl.cc
+am__objects_10 = ptlsserver-server_base.$(OBJEXT) \
 	ptlsserver-debug.$(OBJEXT) ptlsserver-util.$(OBJEXT) \
-	ptlsserver-shared.$(OBJEXT) ptlsserver-http.$(OBJEXT)
+	ptlsserver-shared.$(OBJEXT) ptlsserver-http.$(OBJEXT) \
+	ptlsserver-siphash.$(OBJEXT)
 @ENABLE_EXAMPLE_PICOTLS_TRUE@am_ptlsserver_OBJECTS =  \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsserver-server.$(OBJEXT) \
-@ENABLE_EXAMPLE_PICOTLS_TRUE@	$(am__objects_8) \
+@ENABLE_EXAMPLE_PICOTLS_TRUE@	$(am__objects_10) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsserver-tls_server_context_picotls.$(OBJEXT) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsserver-tls_server_session_picotls.$(OBJEXT) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsserver-tls_session_base_picotls.$(OBJEXT) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsserver-tls_shared_picotls.$(OBJEXT) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	ptlsserver-util_openssl.$(OBJEXT)
 ptlsserver_OBJECTS = $(am_ptlsserver_OBJECTS)
-@ENABLE_EXAMPLE_PICOTLS_TRUE@am__DEPENDENCIES_5 =  \
+@ENABLE_EXAMPLE_PICOTLS_TRUE@am__DEPENDENCIES_6 =  \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	$(am__DEPENDENCIES_1) \
 @ENABLE_EXAMPLE_PICOTLS_TRUE@	$(top_builddir)/crypto/picotls/libngtcp2_crypto_picotls.a
 @ENABLE_EXAMPLE_PICOTLS_TRUE@ptlsserver_DEPENDENCIES =  \
-@ENABLE_EXAMPLE_PICOTLS_TRUE@	$(am__DEPENDENCIES_5)
+@ENABLE_EXAMPLE_PICOTLS_TRUE@	$(am__DEPENDENCIES_6)
 am__qtlsclient_SOURCES_DIST = client.cc client.h client_base.cc \
 	client_base.h tls_client_context.h tls_client_session.h \
 	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
@@ -353,12 +407,12 @@ am__qtlsclient_SOURCES_DIST = client.cc client.h client_base.cc \
 	tls_client_context_quictls.h tls_client_session_quictls.cc \
 	tls_client_session_quictls.h tls_session_base_quictls.cc \
 	tls_session_base_quictls.h util_openssl.cc
-am__objects_9 = qtlsclient-client_base.$(OBJEXT) \
+am__objects_11 = qtlsclient-client_base.$(OBJEXT) \
 	qtlsclient-debug.$(OBJEXT) qtlsclient-util.$(OBJEXT) \
 	qtlsclient-shared.$(OBJEXT)
 @ENABLE_EXAMPLE_QUICTLS_TRUE@am_qtlsclient_OBJECTS =  \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsclient-client.$(OBJEXT) \
-@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__objects_9) \
+@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__objects_11) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsclient-tls_client_context_quictls.$(OBJEXT) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsclient-tls_client_session_quictls.$(OBJEXT) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsclient-tls_session_base_quictls.$(OBJEXT) \
@@ -366,36 +420,38 @@ am__objects_9 = qtlsclient-client_base.$(OBJEXT) \
 qtlsclient_OBJECTS = $(am_qtlsclient_OBJECTS)
 @ENABLE_EXAMPLE_QUICTLS_TRUE@qtlsclient_DEPENDENCIES =  \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__DEPENDENCIES_1) \
-@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la
+@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(crypto_lib)
 am__qtlsserver_SOURCES_DIST = server.cc server.h server_base.cc \
 	server_base.h tls_server_context.h tls_server_session.h \
 	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
-	http.cc http.h network.h tls_server_context_quictls.cc \
-	tls_server_context_quictls.h tls_server_session_quictls.cc \
-	tls_server_session_quictls.h tls_session_base_quictls.cc \
-	tls_session_base_quictls.h util_openssl.cc
-am__objects_10 = qtlsserver-server_base.$(OBJEXT) \
+	http.cc http.h siphash.cc siphash.h network.h \
+	tls_server_context_quictls.cc tls_server_context_quictls.h \
+	tls_server_session_quictls.cc tls_server_session_quictls.h \
+	tls_session_base_quictls.cc tls_session_base_quictls.h \
+	util_openssl.cc
+am__objects_12 = qtlsserver-server_base.$(OBJEXT) \
 	qtlsserver-debug.$(OBJEXT) qtlsserver-util.$(OBJEXT) \
-	qtlsserver-shared.$(OBJEXT) qtlsserver-http.$(OBJEXT)
+	qtlsserver-shared.$(OBJEXT) qtlsserver-http.$(OBJEXT) \
+	qtlsserver-siphash.$(OBJEXT)
 @ENABLE_EXAMPLE_QUICTLS_TRUE@am_qtlsserver_OBJECTS =  \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsserver-server.$(OBJEXT) \
-@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__objects_10) \
+@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__objects_12) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsserver-tls_server_context_quictls.$(OBJEXT) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsserver-tls_server_session_quictls.$(OBJEXT) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsserver-tls_session_base_quictls.$(OBJEXT) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	qtlsserver-util_openssl.$(OBJEXT)
 qtlsserver_OBJECTS = $(am_qtlsserver_OBJECTS)
-@ENABLE_EXAMPLE_QUICTLS_TRUE@am__DEPENDENCIES_6 =  \
+@ENABLE_EXAMPLE_QUICTLS_TRUE@am__DEPENDENCIES_7 =  \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__DEPENDENCIES_1) \
-@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la
+@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(crypto_lib)
 @ENABLE_EXAMPLE_QUICTLS_TRUE@qtlsserver_DEPENDENCIES =  \
-@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__DEPENDENCIES_6)
+@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__DEPENDENCIES_7)
 am__qtlssimpleclient_SOURCES_DIST = simpleclient.c
 @ENABLE_EXAMPLE_QUICTLS_TRUE@am_qtlssimpleclient_OBJECTS = qtlssimpleclient-simpleclient.$(OBJEXT)
 qtlssimpleclient_OBJECTS = $(am_qtlssimpleclient_OBJECTS)
 @ENABLE_EXAMPLE_QUICTLS_TRUE@qtlssimpleclient_DEPENDENCIES =  \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	$(am__DEPENDENCIES_1) \
-@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la
+@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(crypto_lib)
 am__wsslclient_SOURCES_DIST = client.cc client.h client_base.cc \
 	client_base.h tls_client_context.h tls_client_session.h \
 	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
@@ -403,12 +459,12 @@ am__wsslclient_SOURCES_DIST = client.cc client.h client_base.cc \
 	tls_client_context_wolfssl.h tls_client_session_wolfssl.cc \
 	tls_client_session_wolfssl.h tls_session_base_wolfssl.cc \
 	tls_session_base_wolfssl.h util_wolfssl.cc
-am__objects_11 = wsslclient-client_base.$(OBJEXT) \
+am__objects_13 = wsslclient-client_base.$(OBJEXT) \
 	wsslclient-debug.$(OBJEXT) wsslclient-util.$(OBJEXT) \
 	wsslclient-shared.$(OBJEXT)
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@am_wsslclient_OBJECTS =  \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslclient-client.$(OBJEXT) \
-@ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(am__objects_11) \
+@ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(am__objects_13) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslclient-tls_client_context_wolfssl.$(OBJEXT) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslclient-tls_client_session_wolfssl.$(OBJEXT) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslclient-tls_session_base_wolfssl.$(OBJEXT) \
@@ -420,16 +476,18 @@ wsslclient_OBJECTS = $(am_wsslclient_OBJECTS)
 am__wsslserver_SOURCES_DIST = server.cc server.h server_base.cc \
 	server_base.h tls_server_context.h tls_server_session.h \
 	template.h debug.cc debug.h util.cc util.h shared.cc shared.h \
-	http.cc http.h network.h tls_server_context_wolfssl.cc \
-	tls_server_context_wolfssl.h tls_server_session_wolfssl.cc \
-	tls_server_session_wolfssl.h tls_session_base_wolfssl.cc \
-	tls_session_base_wolfssl.h util_wolfssl.cc
-am__objects_12 = wsslserver-server_base.$(OBJEXT) \
+	http.cc http.h siphash.cc siphash.h network.h \
+	tls_server_context_wolfssl.cc tls_server_context_wolfssl.h \
+	tls_server_session_wolfssl.cc tls_server_session_wolfssl.h \
+	tls_session_base_wolfssl.cc tls_session_base_wolfssl.h \
+	util_wolfssl.cc
+am__objects_14 = wsslserver-server_base.$(OBJEXT) \
 	wsslserver-debug.$(OBJEXT) wsslserver-util.$(OBJEXT) \
-	wsslserver-shared.$(OBJEXT) wsslserver-http.$(OBJEXT)
+	wsslserver-shared.$(OBJEXT) wsslserver-http.$(OBJEXT) \
+	wsslserver-siphash.$(OBJEXT)
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@am_wsslserver_OBJECTS =  \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslserver-server.$(OBJEXT) \
-@ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(am__objects_12) \
+@ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(am__objects_14) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslserver-tls_server_context_wolfssl.$(OBJEXT) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslserver-tls_server_session_wolfssl.$(OBJEXT) \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	wsslserver-tls_session_base_wolfssl.$(OBJEXT) \
@@ -468,6 +526,7 @@ am__depfiles_remade =  \
 	./$(DEPDIR)/bsslserver-server.Po \
 	./$(DEPDIR)/bsslserver-server_base.Po \
 	./$(DEPDIR)/bsslserver-shared.Po \
+	./$(DEPDIR)/bsslserver-siphash.Po \
 	./$(DEPDIR)/bsslserver-tls_server_context_boringssl.Po \
 	./$(DEPDIR)/bsslserver-tls_server_session_boringssl.Po \
 	./$(DEPDIR)/bsslserver-tls_session_base_quictls.Po \
@@ -475,6 +534,8 @@ am__depfiles_remade =  \
 	./$(DEPDIR)/bsslserver-util.Po \
 	./$(DEPDIR)/bsslserver-util_openssl.Po \
 	./$(DEPDIR)/examplestest-examplestest.Po \
+	./$(DEPDIR)/examplestest-siphash.Po \
+	./$(DEPDIR)/examplestest-siphash_test.Po \
 	./$(DEPDIR)/examplestest-util.Po \
 	./$(DEPDIR)/examplestest-util_test.Po \
 	./$(DEPDIR)/gtlsclient-client.Po \
@@ -490,6 +551,7 @@ am__depfiles_remade =  \
 	./$(DEPDIR)/gtlsserver-server.Po \
 	./$(DEPDIR)/gtlsserver-server_base.Po \
 	./$(DEPDIR)/gtlsserver-shared.Po \
+	./$(DEPDIR)/gtlsserver-siphash.Po \
 	./$(DEPDIR)/gtlsserver-tls_server_context_gnutls.Po \
 	./$(DEPDIR)/gtlsserver-tls_server_session_gnutls.Po \
 	./$(DEPDIR)/gtlsserver-tls_session_base_gnutls.Po \
@@ -510,11 +572,31 @@ am__depfiles_remade =  \
 	./$(DEPDIR)/h09wsslserver-http.Po \
 	./$(DEPDIR)/h09wsslserver-server_base.Po \
 	./$(DEPDIR)/h09wsslserver-shared.Po \
+	./$(DEPDIR)/h09wsslserver-siphash.Po \
 	./$(DEPDIR)/h09wsslserver-tls_server_context_wolfssl.Po \
 	./$(DEPDIR)/h09wsslserver-tls_server_session_wolfssl.Po \
 	./$(DEPDIR)/h09wsslserver-tls_session_base_wolfssl.Po \
 	./$(DEPDIR)/h09wsslserver-util.Po \
 	./$(DEPDIR)/h09wsslserver-util_wolfssl.Po \
+	./$(DEPDIR)/osslclient-client.Po \
+	./$(DEPDIR)/osslclient-client_base.Po \
+	./$(DEPDIR)/osslclient-debug.Po \
+	./$(DEPDIR)/osslclient-shared.Po \
+	./$(DEPDIR)/osslclient-tls_client_context_ossl.Po \
+	./$(DEPDIR)/osslclient-tls_client_session_ossl.Po \
+	./$(DEPDIR)/osslclient-tls_session_base_ossl.Po \
+	./$(DEPDIR)/osslclient-util.Po \
+	./$(DEPDIR)/osslclient-util_openssl.Po \
+	./$(DEPDIR)/osslserver-debug.Po ./$(DEPDIR)/osslserver-http.Po \
+	./$(DEPDIR)/osslserver-server.Po \
+	./$(DEPDIR)/osslserver-server_base.Po \
+	./$(DEPDIR)/osslserver-shared.Po \
+	./$(DEPDIR)/osslserver-siphash.Po \
+	./$(DEPDIR)/osslserver-tls_server_context_ossl.Po \
+	./$(DEPDIR)/osslserver-tls_server_session_ossl.Po \
+	./$(DEPDIR)/osslserver-tls_session_base_ossl.Po \
+	./$(DEPDIR)/osslserver-util.Po \
+	./$(DEPDIR)/osslserver-util_openssl.Po \
 	./$(DEPDIR)/ptlsclient-client.Po \
 	./$(DEPDIR)/ptlsclient-client_base.Po \
 	./$(DEPDIR)/ptlsclient-debug.Po \
@@ -529,6 +611,7 @@ am__depfiles_remade =  \
 	./$(DEPDIR)/ptlsserver-server.Po \
 	./$(DEPDIR)/ptlsserver-server_base.Po \
 	./$(DEPDIR)/ptlsserver-shared.Po \
+	./$(DEPDIR)/ptlsserver-siphash.Po \
 	./$(DEPDIR)/ptlsserver-tls_server_context_picotls.Po \
 	./$(DEPDIR)/ptlsserver-tls_server_session_picotls.Po \
 	./$(DEPDIR)/ptlsserver-tls_session_base_picotls.Po \
@@ -548,6 +631,7 @@ am__depfiles_remade =  \
 	./$(DEPDIR)/qtlsserver-server.Po \
 	./$(DEPDIR)/qtlsserver-server_base.Po \
 	./$(DEPDIR)/qtlsserver-shared.Po \
+	./$(DEPDIR)/qtlsserver-siphash.Po \
 	./$(DEPDIR)/qtlsserver-tls_server_context_quictls.Po \
 	./$(DEPDIR)/qtlsserver-tls_server_session_quictls.Po \
 	./$(DEPDIR)/qtlsserver-tls_session_base_quictls.Po \
@@ -567,6 +651,7 @@ am__depfiles_remade =  \
 	./$(DEPDIR)/wsslserver-server.Po \
 	./$(DEPDIR)/wsslserver-server_base.Po \
 	./$(DEPDIR)/wsslserver-shared.Po \
+	./$(DEPDIR)/wsslserver-siphash.Po \
 	./$(DEPDIR)/wsslserver-tls_server_context_wolfssl.Po \
 	./$(DEPDIR)/wsslserver-tls_server_session_wolfssl.Po \
 	./$(DEPDIR)/wsslserver-tls_session_base_wolfssl.Po \
@@ -613,6 +698,7 @@ SOURCES = $(bsslclient_SOURCES) $(bsslserver_SOURCES) \
 	$(examplestest_SOURCES) $(gtlsclient_SOURCES) \
 	$(gtlsserver_SOURCES) $(gtlssimpleclient_SOURCES) \
 	$(h09wsslclient_SOURCES) $(h09wsslserver_SOURCES) \
+	$(osslclient_SOURCES) $(osslserver_SOURCES) \
 	$(ptlsclient_SOURCES) $(ptlsserver_SOURCES) \
 	$(qtlsclient_SOURCES) $(qtlsserver_SOURCES) \
 	$(qtlssimpleclient_SOURCES) $(wsslclient_SOURCES) \
@@ -623,6 +709,7 @@ DIST_SOURCES = $(am__bsslclient_SOURCES_DIST) \
 	$(am__gtlssimpleclient_SOURCES_DIST) \
 	$(am__h09wsslclient_SOURCES_DIST) \
 	$(am__h09wsslserver_SOURCES_DIST) \
+	$(am__osslclient_SOURCES_DIST) $(am__osslserver_SOURCES_DIST) \
 	$(am__ptlsclient_SOURCES_DIST) $(am__ptlsserver_SOURCES_DIST) \
 	$(am__qtlsclient_SOURCES_DIST) $(am__qtlsserver_SOURCES_DIST) \
 	$(am__qtlssimpleclient_SOURCES_DIST) \
@@ -875,6 +962,12 @@ CPPFLAGS = @CPPFLAGS@
 CRYPTO_GNUTLS_LT_AGE = @CRYPTO_GNUTLS_LT_AGE@
 CRYPTO_GNUTLS_LT_CURRENT = @CRYPTO_GNUTLS_LT_CURRENT@
 CRYPTO_GNUTLS_LT_REVISION = @CRYPTO_GNUTLS_LT_REVISION@
+CRYPTO_LIBRESSL_LT_AGE = @CRYPTO_LIBRESSL_LT_AGE@
+CRYPTO_LIBRESSL_LT_CURRENT = @CRYPTO_LIBRESSL_LT_CURRENT@
+CRYPTO_LIBRESSL_LT_REVISION = @CRYPTO_LIBRESSL_LT_REVISION@
+CRYPTO_OSSL_LT_AGE = @CRYPTO_OSSL_LT_AGE@
+CRYPTO_OSSL_LT_CURRENT = @CRYPTO_OSSL_LT_CURRENT@
+CRYPTO_OSSL_LT_REVISION = @CRYPTO_OSSL_LT_REVISION@
 CRYPTO_QUICTLS_LT_AGE = @CRYPTO_QUICTLS_LT_AGE@
 CRYPTO_QUICTLS_LT_CURRENT = @CRYPTO_QUICTLS_LT_CURRENT@
 CRYPTO_QUICTLS_LT_REVISION = @CRYPTO_QUICTLS_LT_REVISION@
@@ -902,6 +995,8 @@ ETAGS = @ETAGS@
 EXAMPLES_BORINGSSL = @EXAMPLES_BORINGSSL@
 EXAMPLES_ENABLED = @EXAMPLES_ENABLED@
 EXAMPLES_GNUTLS = @EXAMPLES_GNUTLS@
+EXAMPLES_LIBRESSL = @EXAMPLES_LIBRESSL@
+EXAMPLES_OSSL = @EXAMPLES_OSSL@
 EXAMPLES_PICOTLS = @EXAMPLES_PICOTLS@
 EXAMPLES_QUICTLS = @EXAMPLES_QUICTLS@
 EXAMPLES_WOLFSSL = @EXAMPLES_WOLFSSL@
@@ -909,6 +1004,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -1051,7 +1147,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/lib/includes \
 	-I$(top_builddir)/lib/includes \
 	-I$(top_srcdir)/crypto/includes \
-	-I$(top_srcdir)/third-party \
+	-I$(top_srcdir)/third-party/urlparse \
 	@LIBEV_CFLAGS@ \
 	@LIBNGHTTP3_CFLAGS@ \
 	@LIBBROTLIENC_CFLAGS@ \
@@ -1063,7 +1159,7 @@ AM_LDFLAGS = -no-install \
 	@LIBTOOL_LDFLAGS@
 
 LDADD = $(top_builddir)/lib/libngtcp2.la \
-	$(top_builddir)/third-party/libhttp-parser.la \
+	$(top_builddir)/third-party/liburlparse.la \
 	@LIBEV_LIBS@ \
 	@LIBNGHTTP3_LIBS@ \
 	@LIBBROTLIENC_LIBS@ \
@@ -1078,6 +1174,7 @@ SERVER_SRCS = \
 	util.cc util.h \
 	shared.cc shared.h \
 	http.cc http.h \
+	siphash.cc siphash.h \
 	network.h
 
 CLIENT_SRCS = \
@@ -1090,11 +1187,13 @@ CLIENT_SRCS = \
 	shared.cc shared.h \
 	network.h
 
+@ENABLE_EXAMPLE_LIBRESSL_FALSE@@ENABLE_EXAMPLE_QUICTLS_TRUE@crypto_lib = $(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la
+@ENABLE_EXAMPLE_LIBRESSL_TRUE@@ENABLE_EXAMPLE_QUICTLS_TRUE@crypto_lib = $(top_builddir)/crypto/quictls/libngtcp2_crypto_libressl.la
 @ENABLE_EXAMPLE_QUICTLS_TRUE@qtlssimpleclient_CPPFLAGS = ${AM_CPPFLAGS} \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	@JEMALLOC_CFLAGS@ @OPENSSL_CFLAGS@
 
 @ENABLE_EXAMPLE_QUICTLS_TRUE@qtlssimpleclient_LDADD = ${LDADD} \
-@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la \
+@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(crypto_lib) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	@OPENSSL_LIBS@ \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	@JEMALLOC_LIBS@
 
@@ -1103,7 +1202,7 @@ CLIENT_SRCS = \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	@JEMALLOC_CFLAGS@ @OPENSSL_CFLAGS@ -DWITH_EXAMPLE_QUICTLS
 
 @ENABLE_EXAMPLE_QUICTLS_TRUE@qtlsclient_LDADD = ${LDADD} \
-@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la \
+@ENABLE_EXAMPLE_QUICTLS_TRUE@	$(crypto_lib) \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	@OPENSSL_LIBS@ \
 @ENABLE_EXAMPLE_QUICTLS_TRUE@	@JEMALLOC_LIBS@
 
@@ -1155,11 +1254,12 @@ CLIENT_SRCS = \
 @ENABLE_EXAMPLE_GNUTLS_TRUE@	tls_session_base_gnutls.cc tls_session_base_gnutls.h \
 @ENABLE_EXAMPLE_GNUTLS_TRUE@	util_gnutls.cc
 
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@bsslclient_CPPFLAGS = ${AM_CPPFLAGS} @BORINGSSL_CFLAGS@ -DWITH_EXAMPLE_BORINGSSL
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@bsslclient_LDADD = ${LDADD} \
+@ENABLE_EXAMPLE_BORINGSSL_TRUE@bsslclient_CPPFLAGS = @BORINGSSL_CFLAGS@ -DWITH_EXAMPLE_BORINGSSL ${AM_CPPFLAGS}
+@ENABLE_EXAMPLE_BORINGSSL_TRUE@bsslclient_LDADD = \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	$(top_builddir)/crypto/boringssl/libngtcp2_crypto_boringssl.a \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	@BORINGSSL_LIBS@ \
-@ENABLE_EXAMPLE_BORINGSSL_TRUE@	@JEMALLOC_LIBS@
+@ENABLE_EXAMPLE_BORINGSSL_TRUE@	@JEMALLOC_LIBS@ \
+@ENABLE_EXAMPLE_BORINGSSL_TRUE@        ${LDADD}
 
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@bsslclient_SOURCES = client.cc client.h ${CLIENT_SRCS} \
 @ENABLE_EXAMPLE_BORINGSSL_TRUE@	tls_client_context_boringssl.cc tls_client_context_boringssl.h \
@@ -1229,16 +1329,44 @@ CLIENT_SRCS = \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	tls_session_base_wolfssl.cc tls_session_base_wolfssl.h \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	util_wolfssl.cc
 
-@ENABLE_EXAMPLE_WOLFSSL_TRUE@h09wsslserver_CPPFLAGS = ${wsslclient_CPPFLAGS}
-@ENABLE_EXAMPLE_WOLFSSL_TRUE@h09wsslserver_LDADD = ${wsslclient_LDADD}
+@ENABLE_EXAMPLE_WOLFSSL_TRUE@h09wsslserver_CPPFLAGS = ${wsslclient_CPPFLAGS} \
+@ENABLE_EXAMPLE_WOLFSSL_TRUE@	-I$(top_srcdir)/third-party
+
+@ENABLE_EXAMPLE_WOLFSSL_TRUE@h09wsslserver_LDADD = ${wsslclient_LDADD} \
+@ENABLE_EXAMPLE_WOLFSSL_TRUE@	$(top_builddir)/third-party/libhttp-parser.la
+
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@h09wsslserver_SOURCES = h09server.cc h09server.h ${SERVER_SRCS} \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	tls_server_context_wolfssl.cc tls_server_context_wolfssl.h \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	tls_server_session_wolfssl.cc tls_server_session_wolfssl.h \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	tls_session_base_wolfssl.cc tls_session_base_wolfssl.h \
 @ENABLE_EXAMPLE_WOLFSSL_TRUE@	util_wolfssl.cc
 
+@ENABLE_EXAMPLE_OSSL_TRUE@osslclient_CPPFLAGS = ${AM_CPPFLAGS} \
+@ENABLE_EXAMPLE_OSSL_TRUE@	@JEMALLOC_CFLAGS@ @OPENSSL_CFLAGS@ -DWITH_EXAMPLE_OSSL
+
+@ENABLE_EXAMPLE_OSSL_TRUE@osslclient_LDADD = ${LDADD} \
+@ENABLE_EXAMPLE_OSSL_TRUE@	$(top_builddir)/crypto/ossl/libngtcp2_crypto_ossl.la \
+@ENABLE_EXAMPLE_OSSL_TRUE@	@OPENSSL_LIBS@ \
+@ENABLE_EXAMPLE_OSSL_TRUE@	@JEMALLOC_LIBS@
+
+@ENABLE_EXAMPLE_OSSL_TRUE@osslclient_SOURCES = client.cc client.h ${CLIENT_SRCS} \
+@ENABLE_EXAMPLE_OSSL_TRUE@	tls_client_context_ossl.cc tls_client_context_ossl.h \
+@ENABLE_EXAMPLE_OSSL_TRUE@	tls_client_session_ossl.cc tls_client_session_ossl.h \
+@ENABLE_EXAMPLE_OSSL_TRUE@	tls_session_base_ossl.cc tls_session_base_ossl.h \
+@ENABLE_EXAMPLE_OSSL_TRUE@	util_openssl.cc
+
+@ENABLE_EXAMPLE_OSSL_TRUE@osslserver_CPPFLAGS = ${osslclient_CPPFLAGS}
+@ENABLE_EXAMPLE_OSSL_TRUE@osslserver_LDADD = ${osslclient_LDADD}
+@ENABLE_EXAMPLE_OSSL_TRUE@osslserver_SOURCES = server.cc server.h ${SERVER_SRCS} \
+@ENABLE_EXAMPLE_OSSL_TRUE@	tls_server_context_ossl.cc tls_server_context_ossl.h \
+@ENABLE_EXAMPLE_OSSL_TRUE@	tls_server_session_ossl.cc tls_server_session_ossl.h \
+@ENABLE_EXAMPLE_OSSL_TRUE@	tls_session_base_ossl.cc tls_session_base_ossl.h \
+@ENABLE_EXAMPLE_OSSL_TRUE@	util_openssl.cc
+
 examplestest_SOURCES = examplestest.cc \
 	util_test.cc util_test.h util.cc util.h \
+	siphash_test.cc siphash_test.h siphash.cc siphash.h \
+	siphash_vector.h \
 	$(top_srcdir)/tests/munit/munit.c $(top_srcdir)/tests/munit/munit.h
 
 examplestest_CPPFLAGS = ${AM_CPPFLAGS} -I$(top_srcdir)/tests/munit \
@@ -1338,6 +1466,14 @@ h09wsslserver$(EXEEXT): $(h09wsslserver_OBJECTS) $(h09wsslserver_DEPENDENCIES) $
 	@rm -f h09wsslserver$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(h09wsslserver_OBJECTS) $(h09wsslserver_LDADD) $(LIBS)
 
+osslclient$(EXEEXT): $(osslclient_OBJECTS) $(osslclient_DEPENDENCIES) $(EXTRA_osslclient_DEPENDENCIES) 
+	@rm -f osslclient$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(osslclient_OBJECTS) $(osslclient_LDADD) $(LIBS)
+
+osslserver$(EXEEXT): $(osslserver_OBJECTS) $(osslserver_DEPENDENCIES) $(EXTRA_osslserver_DEPENDENCIES) 
+	@rm -f osslserver$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(osslserver_OBJECTS) $(osslserver_LDADD) $(LIBS)
+
 ptlsclient$(EXEEXT): $(ptlsclient_OBJECTS) $(ptlsclient_DEPENDENCIES) $(EXTRA_ptlsclient_DEPENDENCIES) 
 	@rm -f ptlsclient$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(ptlsclient_OBJECTS) $(ptlsclient_LDADD) $(LIBS)
@@ -1389,6 +1525,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-server.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-server_base.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-shared.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-siphash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-tls_server_context_boringssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-tls_server_session_boringssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-tls_session_base_quictls.Po@am__quote@ # am--include-marker
@@ -1396,6 +1533,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-util.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsslserver-util_openssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/examplestest-examplestest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/examplestest-siphash.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/examplestest-siphash_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/examplestest-util.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/examplestest-util_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtlsclient-client.Po@am__quote@ # am--include-marker
@@ -1412,6 +1551,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtlsserver-server.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtlsserver-server_base.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtlsserver-shared.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtlsserver-siphash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtlsserver-tls_server_context_gnutls.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtlsserver-tls_server_session_gnutls.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtlsserver-tls_session_base_gnutls.Po@am__quote@ # am--include-marker
@@ -1432,11 +1572,32 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-http.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-server_base.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-shared.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-siphash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-tls_server_context_wolfssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-tls_server_session_wolfssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-tls_session_base_wolfssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-util.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/h09wsslserver-util_wolfssl.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-client.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-client_base.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-debug.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-shared.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-tls_client_context_ossl.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-tls_client_session_ossl.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-tls_session_base_ossl.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-util.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslclient-util_openssl.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-debug.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-http.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-server.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-server_base.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-shared.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-siphash.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-tls_server_context_ossl.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-tls_server_session_ossl.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-tls_session_base_ossl.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-util.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osslserver-util_openssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsclient-client.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsclient-client_base.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsclient-debug.Po@am__quote@ # am--include-marker
@@ -1452,6 +1613,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsserver-server.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsserver-server_base.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsserver-shared.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsserver-siphash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsserver-tls_server_context_picotls.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsserver-tls_server_session_picotls.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ptlsserver-tls_session_base_picotls.Po@am__quote@ # am--include-marker
@@ -1472,6 +1634,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtlsserver-server.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtlsserver-server_base.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtlsserver-shared.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtlsserver-siphash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtlsserver-tls_server_context_quictls.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtlsserver-tls_server_session_quictls.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtlsserver-tls_session_base_quictls.Po@am__quote@ # am--include-marker
@@ -1492,6 +1655,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wsslserver-server.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wsslserver-server_base.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wsslserver-shared.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wsslserver-siphash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wsslserver-tls_server_context_wolfssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wsslserver-tls_server_session_wolfssl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wsslserver-tls_session_base_wolfssl.Po@am__quote@ # am--include-marker
@@ -1818,6 +1982,20 @@ bsslserver-http.obj: http.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o bsslserver-http.obj `if test -f 'http.cc'; then $(CYGPATH_W) 'http.cc'; else $(CYGPATH_W) '$(srcdir)/http.cc'; fi`
 
+bsslserver-siphash.o: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT bsslserver-siphash.o -MD -MP -MF $(DEPDIR)/bsslserver-siphash.Tpo -c -o bsslserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/bsslserver-siphash.Tpo $(DEPDIR)/bsslserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='bsslserver-siphash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o bsslserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+
+bsslserver-siphash.obj: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT bsslserver-siphash.obj -MD -MP -MF $(DEPDIR)/bsslserver-siphash.Tpo -c -o bsslserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/bsslserver-siphash.Tpo $(DEPDIR)/bsslserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='bsslserver-siphash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o bsslserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+
 bsslserver-tls_server_context_boringssl.o: tls_server_context_boringssl.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT bsslserver-tls_server_context_boringssl.o -MD -MP -MF $(DEPDIR)/bsslserver-tls_server_context_boringssl.Tpo -c -o bsslserver-tls_server_context_boringssl.o `test -f 'tls_server_context_boringssl.cc' || echo '$(srcdir)/'`tls_server_context_boringssl.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/bsslserver-tls_server_context_boringssl.Tpo $(DEPDIR)/bsslserver-tls_server_context_boringssl.Po
@@ -1929,6 +2107,34 @@ examplestest-util.obj: util.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util.cc' object='examplestest-util.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o examplestest-util.obj `if test -f 'util.cc'; then $(CYGPATH_W) 'util.cc'; else $(CYGPATH_W) '$(srcdir)/util.cc'; fi`
+
+examplestest-siphash_test.o: siphash_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT examplestest-siphash_test.o -MD -MP -MF $(DEPDIR)/examplestest-siphash_test.Tpo -c -o examplestest-siphash_test.o `test -f 'siphash_test.cc' || echo '$(srcdir)/'`siphash_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/examplestest-siphash_test.Tpo $(DEPDIR)/examplestest-siphash_test.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash_test.cc' object='examplestest-siphash_test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o examplestest-siphash_test.o `test -f 'siphash_test.cc' || echo '$(srcdir)/'`siphash_test.cc
+
+examplestest-siphash_test.obj: siphash_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT examplestest-siphash_test.obj -MD -MP -MF $(DEPDIR)/examplestest-siphash_test.Tpo -c -o examplestest-siphash_test.obj `if test -f 'siphash_test.cc'; then $(CYGPATH_W) 'siphash_test.cc'; else $(CYGPATH_W) '$(srcdir)/siphash_test.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/examplestest-siphash_test.Tpo $(DEPDIR)/examplestest-siphash_test.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash_test.cc' object='examplestest-siphash_test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o examplestest-siphash_test.obj `if test -f 'siphash_test.cc'; then $(CYGPATH_W) 'siphash_test.cc'; else $(CYGPATH_W) '$(srcdir)/siphash_test.cc'; fi`
+
+examplestest-siphash.o: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT examplestest-siphash.o -MD -MP -MF $(DEPDIR)/examplestest-siphash.Tpo -c -o examplestest-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/examplestest-siphash.Tpo $(DEPDIR)/examplestest-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='examplestest-siphash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o examplestest-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+
+examplestest-siphash.obj: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT examplestest-siphash.obj -MD -MP -MF $(DEPDIR)/examplestest-siphash.Tpo -c -o examplestest-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/examplestest-siphash.Tpo $(DEPDIR)/examplestest-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='examplestest-siphash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(examplestest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o examplestest-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
 
 gtlsclient-client.o: client.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gtlsclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gtlsclient-client.o -MD -MP -MF $(DEPDIR)/gtlsclient-client.Tpo -c -o gtlsclient-client.o `test -f 'client.cc' || echo '$(srcdir)/'`client.cc
@@ -2139,6 +2345,20 @@ gtlsserver-http.obj: http.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='http.cc' object='gtlsserver-http.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o gtlsserver-http.obj `if test -f 'http.cc'; then $(CYGPATH_W) 'http.cc'; else $(CYGPATH_W) '$(srcdir)/http.cc'; fi`
+
+gtlsserver-siphash.o: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gtlsserver-siphash.o -MD -MP -MF $(DEPDIR)/gtlsserver-siphash.Tpo -c -o gtlsserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/gtlsserver-siphash.Tpo $(DEPDIR)/gtlsserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='gtlsserver-siphash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o gtlsserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+
+gtlsserver-siphash.obj: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gtlsserver-siphash.obj -MD -MP -MF $(DEPDIR)/gtlsserver-siphash.Tpo -c -o gtlsserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/gtlsserver-siphash.Tpo $(DEPDIR)/gtlsserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='gtlsserver-siphash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o gtlsserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
 
 gtlsserver-tls_server_context_gnutls.o: tls_server_context_gnutls.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gtlsserver-tls_server_context_gnutls.o -MD -MP -MF $(DEPDIR)/gtlsserver-tls_server_context_gnutls.Tpo -c -o gtlsserver-tls_server_context_gnutls.o `test -f 'tls_server_context_gnutls.cc' || echo '$(srcdir)/'`tls_server_context_gnutls.cc
@@ -2406,6 +2626,20 @@ h09wsslserver-http.obj: http.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(h09wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o h09wsslserver-http.obj `if test -f 'http.cc'; then $(CYGPATH_W) 'http.cc'; else $(CYGPATH_W) '$(srcdir)/http.cc'; fi`
 
+h09wsslserver-siphash.o: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(h09wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT h09wsslserver-siphash.o -MD -MP -MF $(DEPDIR)/h09wsslserver-siphash.Tpo -c -o h09wsslserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/h09wsslserver-siphash.Tpo $(DEPDIR)/h09wsslserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='h09wsslserver-siphash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(h09wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o h09wsslserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+
+h09wsslserver-siphash.obj: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(h09wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT h09wsslserver-siphash.obj -MD -MP -MF $(DEPDIR)/h09wsslserver-siphash.Tpo -c -o h09wsslserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/h09wsslserver-siphash.Tpo $(DEPDIR)/h09wsslserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='h09wsslserver-siphash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(h09wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o h09wsslserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+
 h09wsslserver-tls_server_context_wolfssl.o: tls_server_context_wolfssl.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(h09wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT h09wsslserver-tls_server_context_wolfssl.o -MD -MP -MF $(DEPDIR)/h09wsslserver-tls_server_context_wolfssl.Tpo -c -o h09wsslserver-tls_server_context_wolfssl.o `test -f 'tls_server_context_wolfssl.cc' || echo '$(srcdir)/'`tls_server_context_wolfssl.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/h09wsslserver-tls_server_context_wolfssl.Tpo $(DEPDIR)/h09wsslserver-tls_server_context_wolfssl.Po
@@ -2461,6 +2695,286 @@ h09wsslserver-util_wolfssl.obj: util_wolfssl.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util_wolfssl.cc' object='h09wsslserver-util_wolfssl.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(h09wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o h09wsslserver-util_wolfssl.obj `if test -f 'util_wolfssl.cc'; then $(CYGPATH_W) 'util_wolfssl.cc'; else $(CYGPATH_W) '$(srcdir)/util_wolfssl.cc'; fi`
+
+osslclient-client.o: client.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-client.o -MD -MP -MF $(DEPDIR)/osslclient-client.Tpo -c -o osslclient-client.o `test -f 'client.cc' || echo '$(srcdir)/'`client.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-client.Tpo $(DEPDIR)/osslclient-client.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='client.cc' object='osslclient-client.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-client.o `test -f 'client.cc' || echo '$(srcdir)/'`client.cc
+
+osslclient-client.obj: client.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-client.obj -MD -MP -MF $(DEPDIR)/osslclient-client.Tpo -c -o osslclient-client.obj `if test -f 'client.cc'; then $(CYGPATH_W) 'client.cc'; else $(CYGPATH_W) '$(srcdir)/client.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-client.Tpo $(DEPDIR)/osslclient-client.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='client.cc' object='osslclient-client.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-client.obj `if test -f 'client.cc'; then $(CYGPATH_W) 'client.cc'; else $(CYGPATH_W) '$(srcdir)/client.cc'; fi`
+
+osslclient-client_base.o: client_base.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-client_base.o -MD -MP -MF $(DEPDIR)/osslclient-client_base.Tpo -c -o osslclient-client_base.o `test -f 'client_base.cc' || echo '$(srcdir)/'`client_base.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-client_base.Tpo $(DEPDIR)/osslclient-client_base.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='client_base.cc' object='osslclient-client_base.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-client_base.o `test -f 'client_base.cc' || echo '$(srcdir)/'`client_base.cc
+
+osslclient-client_base.obj: client_base.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-client_base.obj -MD -MP -MF $(DEPDIR)/osslclient-client_base.Tpo -c -o osslclient-client_base.obj `if test -f 'client_base.cc'; then $(CYGPATH_W) 'client_base.cc'; else $(CYGPATH_W) '$(srcdir)/client_base.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-client_base.Tpo $(DEPDIR)/osslclient-client_base.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='client_base.cc' object='osslclient-client_base.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-client_base.obj `if test -f 'client_base.cc'; then $(CYGPATH_W) 'client_base.cc'; else $(CYGPATH_W) '$(srcdir)/client_base.cc'; fi`
+
+osslclient-debug.o: debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-debug.o -MD -MP -MF $(DEPDIR)/osslclient-debug.Tpo -c -o osslclient-debug.o `test -f 'debug.cc' || echo '$(srcdir)/'`debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-debug.Tpo $(DEPDIR)/osslclient-debug.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='debug.cc' object='osslclient-debug.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-debug.o `test -f 'debug.cc' || echo '$(srcdir)/'`debug.cc
+
+osslclient-debug.obj: debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-debug.obj -MD -MP -MF $(DEPDIR)/osslclient-debug.Tpo -c -o osslclient-debug.obj `if test -f 'debug.cc'; then $(CYGPATH_W) 'debug.cc'; else $(CYGPATH_W) '$(srcdir)/debug.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-debug.Tpo $(DEPDIR)/osslclient-debug.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='debug.cc' object='osslclient-debug.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-debug.obj `if test -f 'debug.cc'; then $(CYGPATH_W) 'debug.cc'; else $(CYGPATH_W) '$(srcdir)/debug.cc'; fi`
+
+osslclient-util.o: util.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-util.o -MD -MP -MF $(DEPDIR)/osslclient-util.Tpo -c -o osslclient-util.o `test -f 'util.cc' || echo '$(srcdir)/'`util.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-util.Tpo $(DEPDIR)/osslclient-util.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util.cc' object='osslclient-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-util.o `test -f 'util.cc' || echo '$(srcdir)/'`util.cc
+
+osslclient-util.obj: util.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-util.obj -MD -MP -MF $(DEPDIR)/osslclient-util.Tpo -c -o osslclient-util.obj `if test -f 'util.cc'; then $(CYGPATH_W) 'util.cc'; else $(CYGPATH_W) '$(srcdir)/util.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-util.Tpo $(DEPDIR)/osslclient-util.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util.cc' object='osslclient-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-util.obj `if test -f 'util.cc'; then $(CYGPATH_W) 'util.cc'; else $(CYGPATH_W) '$(srcdir)/util.cc'; fi`
+
+osslclient-shared.o: shared.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-shared.o -MD -MP -MF $(DEPDIR)/osslclient-shared.Tpo -c -o osslclient-shared.o `test -f 'shared.cc' || echo '$(srcdir)/'`shared.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-shared.Tpo $(DEPDIR)/osslclient-shared.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='shared.cc' object='osslclient-shared.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-shared.o `test -f 'shared.cc' || echo '$(srcdir)/'`shared.cc
+
+osslclient-shared.obj: shared.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-shared.obj -MD -MP -MF $(DEPDIR)/osslclient-shared.Tpo -c -o osslclient-shared.obj `if test -f 'shared.cc'; then $(CYGPATH_W) 'shared.cc'; else $(CYGPATH_W) '$(srcdir)/shared.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-shared.Tpo $(DEPDIR)/osslclient-shared.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='shared.cc' object='osslclient-shared.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-shared.obj `if test -f 'shared.cc'; then $(CYGPATH_W) 'shared.cc'; else $(CYGPATH_W) '$(srcdir)/shared.cc'; fi`
+
+osslclient-tls_client_context_ossl.o: tls_client_context_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-tls_client_context_ossl.o -MD -MP -MF $(DEPDIR)/osslclient-tls_client_context_ossl.Tpo -c -o osslclient-tls_client_context_ossl.o `test -f 'tls_client_context_ossl.cc' || echo '$(srcdir)/'`tls_client_context_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-tls_client_context_ossl.Tpo $(DEPDIR)/osslclient-tls_client_context_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_client_context_ossl.cc' object='osslclient-tls_client_context_ossl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-tls_client_context_ossl.o `test -f 'tls_client_context_ossl.cc' || echo '$(srcdir)/'`tls_client_context_ossl.cc
+
+osslclient-tls_client_context_ossl.obj: tls_client_context_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-tls_client_context_ossl.obj -MD -MP -MF $(DEPDIR)/osslclient-tls_client_context_ossl.Tpo -c -o osslclient-tls_client_context_ossl.obj `if test -f 'tls_client_context_ossl.cc'; then $(CYGPATH_W) 'tls_client_context_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_client_context_ossl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-tls_client_context_ossl.Tpo $(DEPDIR)/osslclient-tls_client_context_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_client_context_ossl.cc' object='osslclient-tls_client_context_ossl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-tls_client_context_ossl.obj `if test -f 'tls_client_context_ossl.cc'; then $(CYGPATH_W) 'tls_client_context_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_client_context_ossl.cc'; fi`
+
+osslclient-tls_client_session_ossl.o: tls_client_session_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-tls_client_session_ossl.o -MD -MP -MF $(DEPDIR)/osslclient-tls_client_session_ossl.Tpo -c -o osslclient-tls_client_session_ossl.o `test -f 'tls_client_session_ossl.cc' || echo '$(srcdir)/'`tls_client_session_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-tls_client_session_ossl.Tpo $(DEPDIR)/osslclient-tls_client_session_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_client_session_ossl.cc' object='osslclient-tls_client_session_ossl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-tls_client_session_ossl.o `test -f 'tls_client_session_ossl.cc' || echo '$(srcdir)/'`tls_client_session_ossl.cc
+
+osslclient-tls_client_session_ossl.obj: tls_client_session_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-tls_client_session_ossl.obj -MD -MP -MF $(DEPDIR)/osslclient-tls_client_session_ossl.Tpo -c -o osslclient-tls_client_session_ossl.obj `if test -f 'tls_client_session_ossl.cc'; then $(CYGPATH_W) 'tls_client_session_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_client_session_ossl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-tls_client_session_ossl.Tpo $(DEPDIR)/osslclient-tls_client_session_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_client_session_ossl.cc' object='osslclient-tls_client_session_ossl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-tls_client_session_ossl.obj `if test -f 'tls_client_session_ossl.cc'; then $(CYGPATH_W) 'tls_client_session_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_client_session_ossl.cc'; fi`
+
+osslclient-tls_session_base_ossl.o: tls_session_base_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-tls_session_base_ossl.o -MD -MP -MF $(DEPDIR)/osslclient-tls_session_base_ossl.Tpo -c -o osslclient-tls_session_base_ossl.o `test -f 'tls_session_base_ossl.cc' || echo '$(srcdir)/'`tls_session_base_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-tls_session_base_ossl.Tpo $(DEPDIR)/osslclient-tls_session_base_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_session_base_ossl.cc' object='osslclient-tls_session_base_ossl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-tls_session_base_ossl.o `test -f 'tls_session_base_ossl.cc' || echo '$(srcdir)/'`tls_session_base_ossl.cc
+
+osslclient-tls_session_base_ossl.obj: tls_session_base_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-tls_session_base_ossl.obj -MD -MP -MF $(DEPDIR)/osslclient-tls_session_base_ossl.Tpo -c -o osslclient-tls_session_base_ossl.obj `if test -f 'tls_session_base_ossl.cc'; then $(CYGPATH_W) 'tls_session_base_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_session_base_ossl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-tls_session_base_ossl.Tpo $(DEPDIR)/osslclient-tls_session_base_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_session_base_ossl.cc' object='osslclient-tls_session_base_ossl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-tls_session_base_ossl.obj `if test -f 'tls_session_base_ossl.cc'; then $(CYGPATH_W) 'tls_session_base_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_session_base_ossl.cc'; fi`
+
+osslclient-util_openssl.o: util_openssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-util_openssl.o -MD -MP -MF $(DEPDIR)/osslclient-util_openssl.Tpo -c -o osslclient-util_openssl.o `test -f 'util_openssl.cc' || echo '$(srcdir)/'`util_openssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-util_openssl.Tpo $(DEPDIR)/osslclient-util_openssl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util_openssl.cc' object='osslclient-util_openssl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-util_openssl.o `test -f 'util_openssl.cc' || echo '$(srcdir)/'`util_openssl.cc
+
+osslclient-util_openssl.obj: util_openssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslclient-util_openssl.obj -MD -MP -MF $(DEPDIR)/osslclient-util_openssl.Tpo -c -o osslclient-util_openssl.obj `if test -f 'util_openssl.cc'; then $(CYGPATH_W) 'util_openssl.cc'; else $(CYGPATH_W) '$(srcdir)/util_openssl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslclient-util_openssl.Tpo $(DEPDIR)/osslclient-util_openssl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util_openssl.cc' object='osslclient-util_openssl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslclient-util_openssl.obj `if test -f 'util_openssl.cc'; then $(CYGPATH_W) 'util_openssl.cc'; else $(CYGPATH_W) '$(srcdir)/util_openssl.cc'; fi`
+
+osslserver-server.o: server.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-server.o -MD -MP -MF $(DEPDIR)/osslserver-server.Tpo -c -o osslserver-server.o `test -f 'server.cc' || echo '$(srcdir)/'`server.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-server.Tpo $(DEPDIR)/osslserver-server.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='server.cc' object='osslserver-server.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-server.o `test -f 'server.cc' || echo '$(srcdir)/'`server.cc
+
+osslserver-server.obj: server.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-server.obj -MD -MP -MF $(DEPDIR)/osslserver-server.Tpo -c -o osslserver-server.obj `if test -f 'server.cc'; then $(CYGPATH_W) 'server.cc'; else $(CYGPATH_W) '$(srcdir)/server.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-server.Tpo $(DEPDIR)/osslserver-server.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='server.cc' object='osslserver-server.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-server.obj `if test -f 'server.cc'; then $(CYGPATH_W) 'server.cc'; else $(CYGPATH_W) '$(srcdir)/server.cc'; fi`
+
+osslserver-server_base.o: server_base.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-server_base.o -MD -MP -MF $(DEPDIR)/osslserver-server_base.Tpo -c -o osslserver-server_base.o `test -f 'server_base.cc' || echo '$(srcdir)/'`server_base.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-server_base.Tpo $(DEPDIR)/osslserver-server_base.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='server_base.cc' object='osslserver-server_base.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-server_base.o `test -f 'server_base.cc' || echo '$(srcdir)/'`server_base.cc
+
+osslserver-server_base.obj: server_base.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-server_base.obj -MD -MP -MF $(DEPDIR)/osslserver-server_base.Tpo -c -o osslserver-server_base.obj `if test -f 'server_base.cc'; then $(CYGPATH_W) 'server_base.cc'; else $(CYGPATH_W) '$(srcdir)/server_base.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-server_base.Tpo $(DEPDIR)/osslserver-server_base.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='server_base.cc' object='osslserver-server_base.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-server_base.obj `if test -f 'server_base.cc'; then $(CYGPATH_W) 'server_base.cc'; else $(CYGPATH_W) '$(srcdir)/server_base.cc'; fi`
+
+osslserver-debug.o: debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-debug.o -MD -MP -MF $(DEPDIR)/osslserver-debug.Tpo -c -o osslserver-debug.o `test -f 'debug.cc' || echo '$(srcdir)/'`debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-debug.Tpo $(DEPDIR)/osslserver-debug.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='debug.cc' object='osslserver-debug.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-debug.o `test -f 'debug.cc' || echo '$(srcdir)/'`debug.cc
+
+osslserver-debug.obj: debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-debug.obj -MD -MP -MF $(DEPDIR)/osslserver-debug.Tpo -c -o osslserver-debug.obj `if test -f 'debug.cc'; then $(CYGPATH_W) 'debug.cc'; else $(CYGPATH_W) '$(srcdir)/debug.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-debug.Tpo $(DEPDIR)/osslserver-debug.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='debug.cc' object='osslserver-debug.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-debug.obj `if test -f 'debug.cc'; then $(CYGPATH_W) 'debug.cc'; else $(CYGPATH_W) '$(srcdir)/debug.cc'; fi`
+
+osslserver-util.o: util.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-util.o -MD -MP -MF $(DEPDIR)/osslserver-util.Tpo -c -o osslserver-util.o `test -f 'util.cc' || echo '$(srcdir)/'`util.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-util.Tpo $(DEPDIR)/osslserver-util.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util.cc' object='osslserver-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-util.o `test -f 'util.cc' || echo '$(srcdir)/'`util.cc
+
+osslserver-util.obj: util.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-util.obj -MD -MP -MF $(DEPDIR)/osslserver-util.Tpo -c -o osslserver-util.obj `if test -f 'util.cc'; then $(CYGPATH_W) 'util.cc'; else $(CYGPATH_W) '$(srcdir)/util.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-util.Tpo $(DEPDIR)/osslserver-util.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util.cc' object='osslserver-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-util.obj `if test -f 'util.cc'; then $(CYGPATH_W) 'util.cc'; else $(CYGPATH_W) '$(srcdir)/util.cc'; fi`
+
+osslserver-shared.o: shared.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-shared.o -MD -MP -MF $(DEPDIR)/osslserver-shared.Tpo -c -o osslserver-shared.o `test -f 'shared.cc' || echo '$(srcdir)/'`shared.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-shared.Tpo $(DEPDIR)/osslserver-shared.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='shared.cc' object='osslserver-shared.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-shared.o `test -f 'shared.cc' || echo '$(srcdir)/'`shared.cc
+
+osslserver-shared.obj: shared.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-shared.obj -MD -MP -MF $(DEPDIR)/osslserver-shared.Tpo -c -o osslserver-shared.obj `if test -f 'shared.cc'; then $(CYGPATH_W) 'shared.cc'; else $(CYGPATH_W) '$(srcdir)/shared.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-shared.Tpo $(DEPDIR)/osslserver-shared.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='shared.cc' object='osslserver-shared.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-shared.obj `if test -f 'shared.cc'; then $(CYGPATH_W) 'shared.cc'; else $(CYGPATH_W) '$(srcdir)/shared.cc'; fi`
+
+osslserver-http.o: http.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-http.o -MD -MP -MF $(DEPDIR)/osslserver-http.Tpo -c -o osslserver-http.o `test -f 'http.cc' || echo '$(srcdir)/'`http.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-http.Tpo $(DEPDIR)/osslserver-http.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='http.cc' object='osslserver-http.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-http.o `test -f 'http.cc' || echo '$(srcdir)/'`http.cc
+
+osslserver-http.obj: http.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-http.obj -MD -MP -MF $(DEPDIR)/osslserver-http.Tpo -c -o osslserver-http.obj `if test -f 'http.cc'; then $(CYGPATH_W) 'http.cc'; else $(CYGPATH_W) '$(srcdir)/http.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-http.Tpo $(DEPDIR)/osslserver-http.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='http.cc' object='osslserver-http.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-http.obj `if test -f 'http.cc'; then $(CYGPATH_W) 'http.cc'; else $(CYGPATH_W) '$(srcdir)/http.cc'; fi`
+
+osslserver-siphash.o: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-siphash.o -MD -MP -MF $(DEPDIR)/osslserver-siphash.Tpo -c -o osslserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-siphash.Tpo $(DEPDIR)/osslserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='osslserver-siphash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+
+osslserver-siphash.obj: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-siphash.obj -MD -MP -MF $(DEPDIR)/osslserver-siphash.Tpo -c -o osslserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-siphash.Tpo $(DEPDIR)/osslserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='osslserver-siphash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+
+osslserver-tls_server_context_ossl.o: tls_server_context_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-tls_server_context_ossl.o -MD -MP -MF $(DEPDIR)/osslserver-tls_server_context_ossl.Tpo -c -o osslserver-tls_server_context_ossl.o `test -f 'tls_server_context_ossl.cc' || echo '$(srcdir)/'`tls_server_context_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-tls_server_context_ossl.Tpo $(DEPDIR)/osslserver-tls_server_context_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_server_context_ossl.cc' object='osslserver-tls_server_context_ossl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-tls_server_context_ossl.o `test -f 'tls_server_context_ossl.cc' || echo '$(srcdir)/'`tls_server_context_ossl.cc
+
+osslserver-tls_server_context_ossl.obj: tls_server_context_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-tls_server_context_ossl.obj -MD -MP -MF $(DEPDIR)/osslserver-tls_server_context_ossl.Tpo -c -o osslserver-tls_server_context_ossl.obj `if test -f 'tls_server_context_ossl.cc'; then $(CYGPATH_W) 'tls_server_context_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_server_context_ossl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-tls_server_context_ossl.Tpo $(DEPDIR)/osslserver-tls_server_context_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_server_context_ossl.cc' object='osslserver-tls_server_context_ossl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-tls_server_context_ossl.obj `if test -f 'tls_server_context_ossl.cc'; then $(CYGPATH_W) 'tls_server_context_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_server_context_ossl.cc'; fi`
+
+osslserver-tls_server_session_ossl.o: tls_server_session_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-tls_server_session_ossl.o -MD -MP -MF $(DEPDIR)/osslserver-tls_server_session_ossl.Tpo -c -o osslserver-tls_server_session_ossl.o `test -f 'tls_server_session_ossl.cc' || echo '$(srcdir)/'`tls_server_session_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-tls_server_session_ossl.Tpo $(DEPDIR)/osslserver-tls_server_session_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_server_session_ossl.cc' object='osslserver-tls_server_session_ossl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-tls_server_session_ossl.o `test -f 'tls_server_session_ossl.cc' || echo '$(srcdir)/'`tls_server_session_ossl.cc
+
+osslserver-tls_server_session_ossl.obj: tls_server_session_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-tls_server_session_ossl.obj -MD -MP -MF $(DEPDIR)/osslserver-tls_server_session_ossl.Tpo -c -o osslserver-tls_server_session_ossl.obj `if test -f 'tls_server_session_ossl.cc'; then $(CYGPATH_W) 'tls_server_session_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_server_session_ossl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-tls_server_session_ossl.Tpo $(DEPDIR)/osslserver-tls_server_session_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_server_session_ossl.cc' object='osslserver-tls_server_session_ossl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-tls_server_session_ossl.obj `if test -f 'tls_server_session_ossl.cc'; then $(CYGPATH_W) 'tls_server_session_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_server_session_ossl.cc'; fi`
+
+osslserver-tls_session_base_ossl.o: tls_session_base_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-tls_session_base_ossl.o -MD -MP -MF $(DEPDIR)/osslserver-tls_session_base_ossl.Tpo -c -o osslserver-tls_session_base_ossl.o `test -f 'tls_session_base_ossl.cc' || echo '$(srcdir)/'`tls_session_base_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-tls_session_base_ossl.Tpo $(DEPDIR)/osslserver-tls_session_base_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_session_base_ossl.cc' object='osslserver-tls_session_base_ossl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-tls_session_base_ossl.o `test -f 'tls_session_base_ossl.cc' || echo '$(srcdir)/'`tls_session_base_ossl.cc
+
+osslserver-tls_session_base_ossl.obj: tls_session_base_ossl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-tls_session_base_ossl.obj -MD -MP -MF $(DEPDIR)/osslserver-tls_session_base_ossl.Tpo -c -o osslserver-tls_session_base_ossl.obj `if test -f 'tls_session_base_ossl.cc'; then $(CYGPATH_W) 'tls_session_base_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_session_base_ossl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-tls_session_base_ossl.Tpo $(DEPDIR)/osslserver-tls_session_base_ossl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tls_session_base_ossl.cc' object='osslserver-tls_session_base_ossl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-tls_session_base_ossl.obj `if test -f 'tls_session_base_ossl.cc'; then $(CYGPATH_W) 'tls_session_base_ossl.cc'; else $(CYGPATH_W) '$(srcdir)/tls_session_base_ossl.cc'; fi`
+
+osslserver-util_openssl.o: util_openssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-util_openssl.o -MD -MP -MF $(DEPDIR)/osslserver-util_openssl.Tpo -c -o osslserver-util_openssl.o `test -f 'util_openssl.cc' || echo '$(srcdir)/'`util_openssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-util_openssl.Tpo $(DEPDIR)/osslserver-util_openssl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util_openssl.cc' object='osslserver-util_openssl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-util_openssl.o `test -f 'util_openssl.cc' || echo '$(srcdir)/'`util_openssl.cc
+
+osslserver-util_openssl.obj: util_openssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT osslserver-util_openssl.obj -MD -MP -MF $(DEPDIR)/osslserver-util_openssl.Tpo -c -o osslserver-util_openssl.obj `if test -f 'util_openssl.cc'; then $(CYGPATH_W) 'util_openssl.cc'; else $(CYGPATH_W) '$(srcdir)/util_openssl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/osslserver-util_openssl.Tpo $(DEPDIR)/osslserver-util_openssl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util_openssl.cc' object='osslserver-util_openssl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(osslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o osslserver-util_openssl.obj `if test -f 'util_openssl.cc'; then $(CYGPATH_W) 'util_openssl.cc'; else $(CYGPATH_W) '$(srcdir)/util_openssl.cc'; fi`
 
 ptlsclient-client.o: client.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ptlsclient_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ptlsclient-client.o -MD -MP -MF $(DEPDIR)/ptlsclient-client.Tpo -c -o ptlsclient-client.o `test -f 'client.cc' || echo '$(srcdir)/'`client.cc
@@ -2685,6 +3199,20 @@ ptlsserver-http.obj: http.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='http.cc' object='ptlsserver-http.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ptlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ptlsserver-http.obj `if test -f 'http.cc'; then $(CYGPATH_W) 'http.cc'; else $(CYGPATH_W) '$(srcdir)/http.cc'; fi`
+
+ptlsserver-siphash.o: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ptlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ptlsserver-siphash.o -MD -MP -MF $(DEPDIR)/ptlsserver-siphash.Tpo -c -o ptlsserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ptlsserver-siphash.Tpo $(DEPDIR)/ptlsserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='ptlsserver-siphash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ptlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ptlsserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+
+ptlsserver-siphash.obj: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ptlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ptlsserver-siphash.obj -MD -MP -MF $(DEPDIR)/ptlsserver-siphash.Tpo -c -o ptlsserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ptlsserver-siphash.Tpo $(DEPDIR)/ptlsserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='ptlsserver-siphash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ptlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ptlsserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
 
 ptlsserver-tls_server_context_picotls.o: tls_server_context_picotls.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ptlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ptlsserver-tls_server_context_picotls.o -MD -MP -MF $(DEPDIR)/ptlsserver-tls_server_context_picotls.Tpo -c -o ptlsserver-tls_server_context_picotls.o `test -f 'tls_server_context_picotls.cc' || echo '$(srcdir)/'`tls_server_context_picotls.cc
@@ -2966,6 +3494,20 @@ qtlsserver-http.obj: http.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(qtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o qtlsserver-http.obj `if test -f 'http.cc'; then $(CYGPATH_W) 'http.cc'; else $(CYGPATH_W) '$(srcdir)/http.cc'; fi`
 
+qtlsserver-siphash.o: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(qtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT qtlsserver-siphash.o -MD -MP -MF $(DEPDIR)/qtlsserver-siphash.Tpo -c -o qtlsserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/qtlsserver-siphash.Tpo $(DEPDIR)/qtlsserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='qtlsserver-siphash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(qtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o qtlsserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+
+qtlsserver-siphash.obj: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(qtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT qtlsserver-siphash.obj -MD -MP -MF $(DEPDIR)/qtlsserver-siphash.Tpo -c -o qtlsserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/qtlsserver-siphash.Tpo $(DEPDIR)/qtlsserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='qtlsserver-siphash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(qtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o qtlsserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+
 qtlsserver-tls_server_context_quictls.o: tls_server_context_quictls.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(qtlsserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT qtlsserver-tls_server_context_quictls.o -MD -MP -MF $(DEPDIR)/qtlsserver-tls_server_context_quictls.Tpo -c -o qtlsserver-tls_server_context_quictls.o `test -f 'tls_server_context_quictls.cc' || echo '$(srcdir)/'`tls_server_context_quictls.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/qtlsserver-tls_server_context_quictls.Tpo $(DEPDIR)/qtlsserver-tls_server_context_quictls.Po
@@ -3231,6 +3773,20 @@ wsslserver-http.obj: http.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='http.cc' object='wsslserver-http.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o wsslserver-http.obj `if test -f 'http.cc'; then $(CYGPATH_W) 'http.cc'; else $(CYGPATH_W) '$(srcdir)/http.cc'; fi`
+
+wsslserver-siphash.o: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT wsslserver-siphash.o -MD -MP -MF $(DEPDIR)/wsslserver-siphash.Tpo -c -o wsslserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/wsslserver-siphash.Tpo $(DEPDIR)/wsslserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='wsslserver-siphash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o wsslserver-siphash.o `test -f 'siphash.cc' || echo '$(srcdir)/'`siphash.cc
+
+wsslserver-siphash.obj: siphash.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT wsslserver-siphash.obj -MD -MP -MF $(DEPDIR)/wsslserver-siphash.Tpo -c -o wsslserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/wsslserver-siphash.Tpo $(DEPDIR)/wsslserver-siphash.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='siphash.cc' object='wsslserver-siphash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o wsslserver-siphash.obj `if test -f 'siphash.cc'; then $(CYGPATH_W) 'siphash.cc'; else $(CYGPATH_W) '$(srcdir)/siphash.cc'; fi`
 
 wsslserver-tls_server_context_wolfssl.o: tls_server_context_wolfssl.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(wsslserver_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT wsslserver-tls_server_context_wolfssl.o -MD -MP -MF $(DEPDIR)/wsslserver-tls_server_context_wolfssl.Tpo -c -o wsslserver-tls_server_context_wolfssl.o `test -f 'tls_server_context_wolfssl.cc' || echo '$(srcdir)/'`tls_server_context_wolfssl.cc
@@ -3604,6 +4160,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/bsslserver-server.Po
 	-rm -f ./$(DEPDIR)/bsslserver-server_base.Po
 	-rm -f ./$(DEPDIR)/bsslserver-shared.Po
+	-rm -f ./$(DEPDIR)/bsslserver-siphash.Po
 	-rm -f ./$(DEPDIR)/bsslserver-tls_server_context_boringssl.Po
 	-rm -f ./$(DEPDIR)/bsslserver-tls_server_session_boringssl.Po
 	-rm -f ./$(DEPDIR)/bsslserver-tls_session_base_quictls.Po
@@ -3611,6 +4168,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/bsslserver-util.Po
 	-rm -f ./$(DEPDIR)/bsslserver-util_openssl.Po
 	-rm -f ./$(DEPDIR)/examplestest-examplestest.Po
+	-rm -f ./$(DEPDIR)/examplestest-siphash.Po
+	-rm -f ./$(DEPDIR)/examplestest-siphash_test.Po
 	-rm -f ./$(DEPDIR)/examplestest-util.Po
 	-rm -f ./$(DEPDIR)/examplestest-util_test.Po
 	-rm -f ./$(DEPDIR)/gtlsclient-client.Po
@@ -3627,6 +4186,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/gtlsserver-server.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-server_base.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-shared.Po
+	-rm -f ./$(DEPDIR)/gtlsserver-siphash.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-tls_server_context_gnutls.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-tls_server_session_gnutls.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-tls_session_base_gnutls.Po
@@ -3647,11 +4207,32 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/h09wsslserver-http.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-server_base.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-shared.Po
+	-rm -f ./$(DEPDIR)/h09wsslserver-siphash.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-tls_server_context_wolfssl.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-tls_server_session_wolfssl.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-tls_session_base_wolfssl.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-util.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-util_wolfssl.Po
+	-rm -f ./$(DEPDIR)/osslclient-client.Po
+	-rm -f ./$(DEPDIR)/osslclient-client_base.Po
+	-rm -f ./$(DEPDIR)/osslclient-debug.Po
+	-rm -f ./$(DEPDIR)/osslclient-shared.Po
+	-rm -f ./$(DEPDIR)/osslclient-tls_client_context_ossl.Po
+	-rm -f ./$(DEPDIR)/osslclient-tls_client_session_ossl.Po
+	-rm -f ./$(DEPDIR)/osslclient-tls_session_base_ossl.Po
+	-rm -f ./$(DEPDIR)/osslclient-util.Po
+	-rm -f ./$(DEPDIR)/osslclient-util_openssl.Po
+	-rm -f ./$(DEPDIR)/osslserver-debug.Po
+	-rm -f ./$(DEPDIR)/osslserver-http.Po
+	-rm -f ./$(DEPDIR)/osslserver-server.Po
+	-rm -f ./$(DEPDIR)/osslserver-server_base.Po
+	-rm -f ./$(DEPDIR)/osslserver-shared.Po
+	-rm -f ./$(DEPDIR)/osslserver-siphash.Po
+	-rm -f ./$(DEPDIR)/osslserver-tls_server_context_ossl.Po
+	-rm -f ./$(DEPDIR)/osslserver-tls_server_session_ossl.Po
+	-rm -f ./$(DEPDIR)/osslserver-tls_session_base_ossl.Po
+	-rm -f ./$(DEPDIR)/osslserver-util.Po
+	-rm -f ./$(DEPDIR)/osslserver-util_openssl.Po
 	-rm -f ./$(DEPDIR)/ptlsclient-client.Po
 	-rm -f ./$(DEPDIR)/ptlsclient-client_base.Po
 	-rm -f ./$(DEPDIR)/ptlsclient-debug.Po
@@ -3667,6 +4248,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/ptlsserver-server.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-server_base.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-shared.Po
+	-rm -f ./$(DEPDIR)/ptlsserver-siphash.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-tls_server_context_picotls.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-tls_server_session_picotls.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-tls_session_base_picotls.Po
@@ -3687,6 +4269,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/qtlsserver-server.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-server_base.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-shared.Po
+	-rm -f ./$(DEPDIR)/qtlsserver-siphash.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-tls_server_context_quictls.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-tls_server_session_quictls.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-tls_session_base_quictls.Po
@@ -3707,6 +4290,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/wsslserver-server.Po
 	-rm -f ./$(DEPDIR)/wsslserver-server_base.Po
 	-rm -f ./$(DEPDIR)/wsslserver-shared.Po
+	-rm -f ./$(DEPDIR)/wsslserver-siphash.Po
 	-rm -f ./$(DEPDIR)/wsslserver-tls_server_context_wolfssl.Po
 	-rm -f ./$(DEPDIR)/wsslserver-tls_server_session_wolfssl.Po
 	-rm -f ./$(DEPDIR)/wsslserver-tls_session_base_wolfssl.Po
@@ -3773,6 +4357,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/bsslserver-server.Po
 	-rm -f ./$(DEPDIR)/bsslserver-server_base.Po
 	-rm -f ./$(DEPDIR)/bsslserver-shared.Po
+	-rm -f ./$(DEPDIR)/bsslserver-siphash.Po
 	-rm -f ./$(DEPDIR)/bsslserver-tls_server_context_boringssl.Po
 	-rm -f ./$(DEPDIR)/bsslserver-tls_server_session_boringssl.Po
 	-rm -f ./$(DEPDIR)/bsslserver-tls_session_base_quictls.Po
@@ -3780,6 +4365,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/bsslserver-util.Po
 	-rm -f ./$(DEPDIR)/bsslserver-util_openssl.Po
 	-rm -f ./$(DEPDIR)/examplestest-examplestest.Po
+	-rm -f ./$(DEPDIR)/examplestest-siphash.Po
+	-rm -f ./$(DEPDIR)/examplestest-siphash_test.Po
 	-rm -f ./$(DEPDIR)/examplestest-util.Po
 	-rm -f ./$(DEPDIR)/examplestest-util_test.Po
 	-rm -f ./$(DEPDIR)/gtlsclient-client.Po
@@ -3796,6 +4383,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/gtlsserver-server.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-server_base.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-shared.Po
+	-rm -f ./$(DEPDIR)/gtlsserver-siphash.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-tls_server_context_gnutls.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-tls_server_session_gnutls.Po
 	-rm -f ./$(DEPDIR)/gtlsserver-tls_session_base_gnutls.Po
@@ -3816,11 +4404,32 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/h09wsslserver-http.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-server_base.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-shared.Po
+	-rm -f ./$(DEPDIR)/h09wsslserver-siphash.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-tls_server_context_wolfssl.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-tls_server_session_wolfssl.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-tls_session_base_wolfssl.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-util.Po
 	-rm -f ./$(DEPDIR)/h09wsslserver-util_wolfssl.Po
+	-rm -f ./$(DEPDIR)/osslclient-client.Po
+	-rm -f ./$(DEPDIR)/osslclient-client_base.Po
+	-rm -f ./$(DEPDIR)/osslclient-debug.Po
+	-rm -f ./$(DEPDIR)/osslclient-shared.Po
+	-rm -f ./$(DEPDIR)/osslclient-tls_client_context_ossl.Po
+	-rm -f ./$(DEPDIR)/osslclient-tls_client_session_ossl.Po
+	-rm -f ./$(DEPDIR)/osslclient-tls_session_base_ossl.Po
+	-rm -f ./$(DEPDIR)/osslclient-util.Po
+	-rm -f ./$(DEPDIR)/osslclient-util_openssl.Po
+	-rm -f ./$(DEPDIR)/osslserver-debug.Po
+	-rm -f ./$(DEPDIR)/osslserver-http.Po
+	-rm -f ./$(DEPDIR)/osslserver-server.Po
+	-rm -f ./$(DEPDIR)/osslserver-server_base.Po
+	-rm -f ./$(DEPDIR)/osslserver-shared.Po
+	-rm -f ./$(DEPDIR)/osslserver-siphash.Po
+	-rm -f ./$(DEPDIR)/osslserver-tls_server_context_ossl.Po
+	-rm -f ./$(DEPDIR)/osslserver-tls_server_session_ossl.Po
+	-rm -f ./$(DEPDIR)/osslserver-tls_session_base_ossl.Po
+	-rm -f ./$(DEPDIR)/osslserver-util.Po
+	-rm -f ./$(DEPDIR)/osslserver-util_openssl.Po
 	-rm -f ./$(DEPDIR)/ptlsclient-client.Po
 	-rm -f ./$(DEPDIR)/ptlsclient-client_base.Po
 	-rm -f ./$(DEPDIR)/ptlsclient-debug.Po
@@ -3836,6 +4445,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/ptlsserver-server.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-server_base.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-shared.Po
+	-rm -f ./$(DEPDIR)/ptlsserver-siphash.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-tls_server_context_picotls.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-tls_server_session_picotls.Po
 	-rm -f ./$(DEPDIR)/ptlsserver-tls_session_base_picotls.Po
@@ -3856,6 +4466,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/qtlsserver-server.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-server_base.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-shared.Po
+	-rm -f ./$(DEPDIR)/qtlsserver-siphash.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-tls_server_context_quictls.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-tls_server_session_quictls.Po
 	-rm -f ./$(DEPDIR)/qtlsserver-tls_session_base_quictls.Po
@@ -3876,6 +4487,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/wsslserver-server.Po
 	-rm -f ./$(DEPDIR)/wsslserver-server_base.Po
 	-rm -f ./$(DEPDIR)/wsslserver-shared.Po
+	-rm -f ./$(DEPDIR)/wsslserver-siphash.Po
 	-rm -f ./$(DEPDIR)/wsslserver-tls_server_context_wolfssl.Po
 	-rm -f ./$(DEPDIR)/wsslserver-tls_server_session_wolfssl.Po
 	-rm -f ./$(DEPDIR)/wsslserver-tls_session_base_wolfssl.Po

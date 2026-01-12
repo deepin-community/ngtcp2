@@ -60,10 +60,10 @@ int TLSClientSession::init(bool &early_data_enabled,
 
   switch (app_proto) {
   case AppProtocol::H3:
-    SSL_set_alpn_protos(ssl_, H3_ALPN, str_size(H3_ALPN));
+    SSL_set_alpn_protos(ssl_, H3_ALPN.data(), H3_ALPN.size());
     break;
   case AppProtocol::HQ:
-    SSL_set_alpn_protos(ssl_, HQ_ALPN, str_size(HQ_ALPN));
+    SSL_set_alpn_protos(ssl_, HQ_ALPN.data(), HQ_ALPN.size());
     break;
   }
 
@@ -98,7 +98,7 @@ int TLSClientSession::init(bool &early_data_enabled,
           early_data_enabled = true;
           SSL_set_quic_early_data_enabled(ssl_, 1);
         }
-#endif // !LIBRESSL_VERSION_NUMBER
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
         SSL_SESSION_free(session);
       }
     }

@@ -28,6 +28,7 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
+#include <algorithm>
 
 #include <ngtcp2/ngtcp2_crypto_wolfssl.h>
 
@@ -51,10 +52,8 @@ int alpn_select_proto_h3_cb(WOLFSSL *ssl, const unsigned char **out,
                             unsigned char *outlen, const unsigned char *in,
                             unsigned int inlen, void *arg) {
   auto conn_ref =
-      static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
+    static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
   auto h = static_cast<HandlerBase *>(conn_ref->user_data);
-  const uint8_t *alpn;
-  size_t alpnlen;
   // This should be the negotiated version, but we have not set the
   // negotiated version when this callback is called.
   auto version = ngtcp2_conn_get_client_chosen_version(h->conn());
@@ -62,8 +61,6 @@ int alpn_select_proto_h3_cb(WOLFSSL *ssl, const unsigned char **out,
   switch (version) {
   case NGTCP2_PROTO_VER_V1:
   case NGTCP2_PROTO_VER_V2:
-    alpn = H3_ALPN_V1;
-    alpnlen = str_size(H3_ALPN_V1);
     break;
   default:
     if (!config.quiet) {
@@ -73,16 +70,17 @@ int alpn_select_proto_h3_cb(WOLFSSL *ssl, const unsigned char **out,
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
-  for (auto p = in, end = in + inlen; p + alpnlen <= end; p += *p + 1) {
-    if (std::equal(alpn, alpn + alpnlen, p)) {
-      *out = p + 1;
-      *outlen = *p;
+  for (auto s = std::span{in, inlen}; s.size() >= H3_ALPN_V1.size();
+       s = s.subspan(s[0] + 1)) {
+    if (std::ranges::equal(H3_ALPN_V1, s.first(H3_ALPN_V1.size()))) {
+      *out = &s[1];
+      *outlen = s[0];
       return SSL_TLSEXT_ERR_OK;
     }
   }
 
   if (!config.quiet) {
-    std::cerr << "Client did not present ALPN " << &alpn[1] << std::endl;
+    std::cerr << "Client did not present ALPN " << &H3_ALPN_V1[1] << std::endl;
   }
 
   return SSL_TLSEXT_ERR_ALERT_FATAL;
@@ -94,10 +92,8 @@ int alpn_select_proto_hq_cb(WOLFSSL *ssl, const unsigned char **out,
                             unsigned char *outlen, const unsigned char *in,
                             unsigned int inlen, void *arg) {
   auto conn_ref =
-      static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
+    static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
   auto h = static_cast<HandlerBase *>(conn_ref->user_data);
-  const uint8_t *alpn;
-  size_t alpnlen;
   // This should be the negotiated version, but we have not set the
   // negotiated version when this callback is called.
   auto version = ngtcp2_conn_get_client_chosen_version(h->conn());
@@ -105,8 +101,6 @@ int alpn_select_proto_hq_cb(WOLFSSL *ssl, const unsigned char **out,
   switch (version) {
   case NGTCP2_PROTO_VER_V1:
   case NGTCP2_PROTO_VER_V2:
-    alpn = HQ_ALPN_V1;
-    alpnlen = str_size(HQ_ALPN_V1);
     break;
   default:
     if (!config.quiet) {
@@ -116,16 +110,17 @@ int alpn_select_proto_hq_cb(WOLFSSL *ssl, const unsigned char **out,
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
-  for (auto p = in, end = in + inlen; p + alpnlen <= end; p += *p + 1) {
-    if (std::equal(alpn, alpn + alpnlen, p)) {
-      *out = p + 1;
-      *outlen = *p;
+  for (auto s = std::span{in, inlen}; s.size() >= HQ_ALPN_V1.size();
+       s = s.subspan(s[0] + 1)) {
+    if (std::ranges::equal(HQ_ALPN_V1, s.first(HQ_ALPN_V1.size()))) {
+      *out = &s[1];
+      *outlen = s[0];
       return SSL_TLSEXT_ERR_OK;
     }
   }
 
   if (!config.quiet) {
-    std::cerr << "Client did not present ALPN " << &alpn[1] << std::endl;
+    std::cerr << "Client did not present ALPN " << &HQ_ALPN_V1[1] << std::endl;
   }
 
   return SSL_TLSEXT_ERR_ALERT_FATAL;
@@ -144,11 +139,11 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
                            AppProtocol app_proto) {
   constexpr static unsigned char sid_ctx[] = "ngtcp2 server";
 
-#if defined(DEBUG_WOLFSSL)
+#ifdef DEBUG_WOLFSSL
   if (!config.quiet) {
     /*wolfSSL_Debugging_ON();*/
   }
-#endif
+#endif // defined(DEBUG_WOLFSSL)
 
   ssl_ctx_ = wolfSSL_CTX_new(wolfTLSv1_3_server_method());
   if (!ssl_ctx_) {
@@ -166,11 +161,11 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
 
 #ifdef WOLFSSL_EARLY_DATA
   wolfSSL_CTX_set_max_early_data(ssl_ctx_, UINT32_MAX);
-#endif
+#endif // defined(WOLFSSL_EARLY_DATA)
 
   constexpr auto ssl_opts =
-      (WOLFSSL_OP_ALL & ~WOLFSSL_OP_DONT_INSERT_EMPTY_FRAGMENTS) |
-      WOLFSSL_OP_SINGLE_ECDH_USE | WOLFSSL_OP_CIPHER_SERVER_PREFERENCE;
+    (WOLFSSL_OP_ALL & ~WOLFSSL_OP_DONT_INSERT_EMPTY_FRAGMENTS) |
+    WOLFSSL_OP_SINGLE_ECDH_USE | WOLFSSL_OP_CIPHER_SERVER_PREFERENCE;
 
   wolfSSL_CTX_set_options(ssl_ctx_, ssl_opts);
 
@@ -180,9 +175,9 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
     return -1;
   }
 
-  if (wolfSSL_CTX_set1_curves_list(ssl_ctx_,
+  if (wolfSSL_CTX_set1_groups_list(ssl_ctx_,
                                    const_cast<char *>(config.groups)) != 1) {
-    std::cerr << "wolfSSL_CTX_set1_curves_list(" << config.groups << ") failed"
+    std::cerr << "wolfSSL_CTX_set1_groups_list(" << config.groups << ") failed"
               << std::endl;
     return -1;
   }
@@ -227,7 +222,7 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
   if (config.verify_client) {
     wolfSSL_CTX_set_verify(ssl_ctx_,
                            WOLFSSL_VERIFY_PEER | WOLFSSL_VERIFY_CLIENT_ONCE |
-                               WOLFSSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                             WOLFSSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                            verify_cb);
   }
 
@@ -239,15 +234,15 @@ extern std::ofstream keylog_file;
 #ifdef HAVE_SECRET_CALLBACK
 namespace {
 void keylog_callback(const WOLFSSL *ssl, const char *line) {
-  keylog_file.write(line, strlen(line));
+  keylog_file.write(line, static_cast<std::streamsize>(strlen(line)));
   keylog_file.put('\n');
   keylog_file.flush();
 }
 } // namespace
-#endif
+#endif // defined(HAVE_SECRET_CALLBACK)
 
 void TLSServerContext::enable_keylog() {
 #ifdef HAVE_SECRET_CALLBACK
   wolfSSL_CTX_set_keylog_callback(ssl_ctx_, keylog_callback);
-#endif
+#endif // defined(HAVE_SECRET_CALLBACK)
 }

@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif // HAVE_CONFIG_H
+#endif // defined(HAVE_CONFIG_H)
 
 #include <vector>
 #include <deque>
@@ -42,6 +42,8 @@
 #include "tls_server_session.h"
 #include "network.h"
 #include "shared.h"
+#include "template.h"
+#include "util.h"
 
 using namespace ngtcp2;
 
@@ -154,14 +156,23 @@ struct Config {
   uint32_t initial_pkt_num;
   // pmtud_probes is the array of UDP datagram payload size to probes.
   std::vector<uint16_t> pmtud_probes;
+  // ech_config contains server-side ECH configuration.
+  util::ECHServerConfig ech_config;
+  // origin_list contains a payload of ORIGIN frame.
+  std::optional<std::vector<uint8_t>> origin_list;
+  // no_gso disables GSO.
+  bool no_gso;
+  // show_stat, if true, displays the connection statistics when the
+  // connection is closed.
+  bool show_stat;
 };
 
 struct Buffer {
   Buffer(const uint8_t *data, size_t datalen);
   explicit Buffer(size_t datalen);
 
-  size_t size() const { return tail - begin; }
-  size_t left() const { return buf.data() + buf.size() - tail; }
+  size_t size() const { return as_unsigned(tail - begin); }
+  size_t left() const { return as_unsigned(buf.data() + buf.size() - tail); }
   uint8_t *const wpos() { return tail; }
   std::span<const uint8_t> data() const { return {begin, size()}; }
   void push(size_t len) { tail += len; }
@@ -195,4 +206,4 @@ protected:
   ngtcp2_ccerr last_error_;
 };
 
-#endif // SERVER_BASE_H
+#endif // !defined(SERVER_BASE_H)

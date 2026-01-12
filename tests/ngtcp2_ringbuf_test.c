@@ -30,13 +30,14 @@
 #include "ngtcp2_test_helper.h"
 
 static const MunitTest tests[] = {
-    munit_void_test(test_ngtcp2_ringbuf_push_front),
-    munit_void_test(test_ngtcp2_ringbuf_pop_front),
-    munit_test_end(),
+  munit_void_test(test_ngtcp2_ringbuf_push_front),
+  munit_void_test(test_ngtcp2_ringbuf_pop_front),
+  munit_test_end(),
 };
 
 const MunitSuite ringbuf_suite = {
-    "/ringbuf", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE,
+  .prefix = "/ringbuf",
+  .tests = tests,
 };
 
 typedef struct {
@@ -48,8 +49,10 @@ void test_ngtcp2_ringbuf_push_front(void) {
   ngtcp2_ringbuf rb;
   const ngtcp2_mem *mem = ngtcp2_mem_default();
   size_t i;
+  int rv;
 
-  ngtcp2_ringbuf_init(&rb, 64, sizeof(ints), mem);
+  rv = ngtcp2_ringbuf_init(&rb, 64, sizeof(ints), mem);
+  assert_int(0, ==, rv);
 
   for (i = 0; i < 64; ++i) {
     ints *p = ngtcp2_ringbuf_push_front(&rb);
@@ -77,8 +80,10 @@ void test_ngtcp2_ringbuf_pop_front(void) {
   ngtcp2_ringbuf rb;
   const ngtcp2_mem *mem = ngtcp2_mem_default();
   size_t i;
+  int rv;
 
-  ngtcp2_ringbuf_init(&rb, 4, sizeof(ints), mem);
+  rv = ngtcp2_ringbuf_init(&rb, 4, sizeof(ints), mem);
+  assert_int(0, ==, rv);
 
   for (i = 0; i < 5; ++i) {
     ints *p = ngtcp2_ringbuf_push_front(&rb);

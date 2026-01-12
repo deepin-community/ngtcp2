@@ -28,7 +28,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/lib/includes \
 	-I$(top_builddir)/lib/includes \
 	-I$(top_srcdir)/crypto/includes \
-	-I$(top_srcdir)/third-party \
+	-I$(top_srcdir)/third-party/urlparse \
 	@LIBEV_CFLAGS@ \
 	@LIBNGHTTP3_CFLAGS@ \
 	@LIBBROTLIENC_CFLAGS@ \
@@ -38,7 +38,7 @@ AM_CPPFLAGS = \
 AM_LDFLAGS = -no-install \
 	@LIBTOOL_LDFLAGS@
 LDADD = $(top_builddir)/lib/libngtcp2.la \
-	$(top_builddir)/third-party/libhttp-parser.la \
+	$(top_builddir)/third-party/liburlparse.la \
 	@LIBEV_LIBS@ \
 	@LIBNGHTTP3_LIBS@ \
 	@LIBBROTLIENC_LIBS@ \
@@ -53,6 +53,7 @@ SERVER_SRCS = \
 	util.cc util.h \
 	shared.cc shared.h \
 	http.cc http.h \
+	siphash.cc siphash.h \
 	network.h
 
 CLIENT_SRCS = \
@@ -68,13 +69,19 @@ CLIENT_SRCS = \
 noinst_PROGRAMS =
 
 if ENABLE_EXAMPLE_QUICTLS
+if ENABLE_EXAMPLE_LIBRESSL
+crypto_lib = $(top_builddir)/crypto/quictls/libngtcp2_crypto_libressl.la
+else
+crypto_lib = $(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la
+endif
+
 noinst_PROGRAMS += qtlsclient qtlsserver \
 	qtlssimpleclient
 
 qtlssimpleclient_CPPFLAGS = ${AM_CPPFLAGS} \
 	@JEMALLOC_CFLAGS@ @OPENSSL_CFLAGS@
 qtlssimpleclient_LDADD = ${LDADD} \
-	$(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la \
+	$(crypto_lib) \
 	@OPENSSL_LIBS@ \
 	@JEMALLOC_LIBS@
 qtlssimpleclient_SOURCES = simpleclient.c
@@ -82,7 +89,7 @@ qtlssimpleclient_SOURCES = simpleclient.c
 qtlsclient_CPPFLAGS = ${AM_CPPFLAGS} \
 	@JEMALLOC_CFLAGS@ @OPENSSL_CFLAGS@ -DWITH_EXAMPLE_QUICTLS
 qtlsclient_LDADD = ${LDADD} \
-	$(top_builddir)/crypto/quictls/libngtcp2_crypto_quictls.la \
+	$(crypto_lib) \
 	@OPENSSL_LIBS@ \
 	@JEMALLOC_LIBS@
 qtlsclient_SOURCES = client.cc client.h ${CLIENT_SRCS} \
@@ -137,11 +144,12 @@ endif # ENABLE_EXAMPLE_GNUTLS
 if ENABLE_EXAMPLE_BORINGSSL
 noinst_PROGRAMS += bsslclient bsslserver
 
-bsslclient_CPPFLAGS = ${AM_CPPFLAGS} @BORINGSSL_CFLAGS@ -DWITH_EXAMPLE_BORINGSSL
-bsslclient_LDADD = ${LDADD} \
+bsslclient_CPPFLAGS = @BORINGSSL_CFLAGS@ -DWITH_EXAMPLE_BORINGSSL ${AM_CPPFLAGS}
+bsslclient_LDADD = \
 	$(top_builddir)/crypto/boringssl/libngtcp2_crypto_boringssl.a \
 	@BORINGSSL_LIBS@ \
-	@JEMALLOC_LIBS@
+	@JEMALLOC_LIBS@ \
+        ${LDADD}
 bsslclient_SOURCES = client.cc client.h ${CLIENT_SRCS} \
 	tls_client_context_boringssl.cc tls_client_context_boringssl.h \
 	tls_client_session_boringssl.cc tls_client_session_boringssl.h \
@@ -215,8 +223,10 @@ h09wsslclient_SOURCES = h09client.cc h09client.h ${CLIENT_SRCS} \
 	tls_session_base_wolfssl.cc tls_session_base_wolfssl.h \
 	util_wolfssl.cc
 
-h09wsslserver_CPPFLAGS = ${wsslclient_CPPFLAGS}
-h09wsslserver_LDADD = ${wsslclient_LDADD}
+h09wsslserver_CPPFLAGS = ${wsslclient_CPPFLAGS} \
+	-I$(top_srcdir)/third-party
+h09wsslserver_LDADD = ${wsslclient_LDADD} \
+	$(top_builddir)/third-party/libhttp-parser.la
 h09wsslserver_SOURCES = h09server.cc h09server.h ${SERVER_SRCS} \
 	tls_server_context_wolfssl.cc tls_server_context_wolfssl.h \
 	tls_server_session_wolfssl.cc tls_server_session_wolfssl.h \
@@ -224,9 +234,35 @@ h09wsslserver_SOURCES = h09server.cc h09server.h ${SERVER_SRCS} \
 	util_wolfssl.cc
 endif # ENABLE_EXAMPLE_WOLFSSL
 
+if ENABLE_EXAMPLE_OSSL
+noinst_PROGRAMS += osslclient osslserver
+
+osslclient_CPPFLAGS = ${AM_CPPFLAGS} \
+	@JEMALLOC_CFLAGS@ @OPENSSL_CFLAGS@ -DWITH_EXAMPLE_OSSL
+osslclient_LDADD = ${LDADD} \
+	$(top_builddir)/crypto/ossl/libngtcp2_crypto_ossl.la \
+	@OPENSSL_LIBS@ \
+	@JEMALLOC_LIBS@
+osslclient_SOURCES = client.cc client.h ${CLIENT_SRCS} \
+	tls_client_context_ossl.cc tls_client_context_ossl.h \
+	tls_client_session_ossl.cc tls_client_session_ossl.h \
+	tls_session_base_ossl.cc tls_session_base_ossl.h \
+	util_openssl.cc
+
+osslserver_CPPFLAGS = ${osslclient_CPPFLAGS}
+osslserver_LDADD = ${osslclient_LDADD}
+osslserver_SOURCES = server.cc server.h ${SERVER_SRCS} \
+	tls_server_context_ossl.cc tls_server_context_ossl.h \
+	tls_server_session_ossl.cc tls_server_session_ossl.h \
+	tls_session_base_ossl.cc tls_session_base_ossl.h \
+	util_openssl.cc
+endif # ENABLE_EXAMPLE_OSSL
+
 check_PROGRAMS = examplestest
 examplestest_SOURCES = examplestest.cc \
 	util_test.cc util_test.h util.cc util.h \
+	siphash_test.cc siphash_test.h siphash.cc siphash.h \
+	siphash_vector.h \
 	$(top_srcdir)/tests/munit/munit.c $(top_srcdir)/tests/munit/munit.h
 examplestest_CPPFLAGS = ${AM_CPPFLAGS} -I$(top_srcdir)/tests/munit \
 	@JEMALLOC_CFLAGS@

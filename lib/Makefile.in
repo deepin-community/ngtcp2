@@ -161,7 +161,9 @@ am__objects_2 = ngtcp2_pkt.lo ngtcp2_conv.lo ngtcp2_str.lo \
 	ngtcp2_pmtud.lo ngtcp2_version.lo ngtcp2_rst.lo \
 	ngtcp2_window_filter.lo ngtcp2_opl.lo ngtcp2_balloc.lo \
 	ngtcp2_objalloc.lo ngtcp2_unreachable.lo \
-	ngtcp2_transport_params.lo ngtcp2_settings.lo
+	ngtcp2_transport_params.lo ngtcp2_settings.lo \
+	ngtcp2_callbacks.lo ngtcp2_dcidtr.lo ngtcp2_pcg.lo \
+	ngtcp2_ratelim.lo ngtcp2_conn_info.lo
 am_libngtcp2_la_OBJECTS = $(am__objects_1) $(am__objects_2)
 libngtcp2_la_OBJECTS = $(am_libngtcp2_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -189,18 +191,20 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/ngtcp2_acktr.Plo \
 	./$(DEPDIR)/ngtcp2_addr.Plo ./$(DEPDIR)/ngtcp2_balloc.Plo \
 	./$(DEPDIR)/ngtcp2_bbr.Plo ./$(DEPDIR)/ngtcp2_buf.Plo \
-	./$(DEPDIR)/ngtcp2_cc.Plo ./$(DEPDIR)/ngtcp2_cid.Plo \
-	./$(DEPDIR)/ngtcp2_conn.Plo ./$(DEPDIR)/ngtcp2_conv.Plo \
-	./$(DEPDIR)/ngtcp2_crypto.Plo ./$(DEPDIR)/ngtcp2_err.Plo \
-	./$(DEPDIR)/ngtcp2_frame_chain.Plo \
+	./$(DEPDIR)/ngtcp2_callbacks.Plo ./$(DEPDIR)/ngtcp2_cc.Plo \
+	./$(DEPDIR)/ngtcp2_cid.Plo ./$(DEPDIR)/ngtcp2_conn.Plo \
+	./$(DEPDIR)/ngtcp2_conn_info.Plo ./$(DEPDIR)/ngtcp2_conv.Plo \
+	./$(DEPDIR)/ngtcp2_crypto.Plo ./$(DEPDIR)/ngtcp2_dcidtr.Plo \
+	./$(DEPDIR)/ngtcp2_err.Plo ./$(DEPDIR)/ngtcp2_frame_chain.Plo \
 	./$(DEPDIR)/ngtcp2_gaptr.Plo ./$(DEPDIR)/ngtcp2_idtr.Plo \
 	./$(DEPDIR)/ngtcp2_ksl.Plo ./$(DEPDIR)/ngtcp2_log.Plo \
 	./$(DEPDIR)/ngtcp2_map.Plo ./$(DEPDIR)/ngtcp2_mem.Plo \
 	./$(DEPDIR)/ngtcp2_objalloc.Plo ./$(DEPDIR)/ngtcp2_opl.Plo \
-	./$(DEPDIR)/ngtcp2_path.Plo ./$(DEPDIR)/ngtcp2_pkt.Plo \
-	./$(DEPDIR)/ngtcp2_pmtud.Plo ./$(DEPDIR)/ngtcp2_ppe.Plo \
-	./$(DEPDIR)/ngtcp2_pq.Plo ./$(DEPDIR)/ngtcp2_pv.Plo \
-	./$(DEPDIR)/ngtcp2_qlog.Plo ./$(DEPDIR)/ngtcp2_range.Plo \
+	./$(DEPDIR)/ngtcp2_path.Plo ./$(DEPDIR)/ngtcp2_pcg.Plo \
+	./$(DEPDIR)/ngtcp2_pkt.Plo ./$(DEPDIR)/ngtcp2_pmtud.Plo \
+	./$(DEPDIR)/ngtcp2_ppe.Plo ./$(DEPDIR)/ngtcp2_pq.Plo \
+	./$(DEPDIR)/ngtcp2_pv.Plo ./$(DEPDIR)/ngtcp2_qlog.Plo \
+	./$(DEPDIR)/ngtcp2_range.Plo ./$(DEPDIR)/ngtcp2_ratelim.Plo \
 	./$(DEPDIR)/ngtcp2_ringbuf.Plo ./$(DEPDIR)/ngtcp2_rob.Plo \
 	./$(DEPDIR)/ngtcp2_rst.Plo ./$(DEPDIR)/ngtcp2_rtb.Plo \
 	./$(DEPDIR)/ngtcp2_settings.Plo ./$(DEPDIR)/ngtcp2_str.Plo \
@@ -316,6 +320,12 @@ CPPFLAGS = @CPPFLAGS@
 CRYPTO_GNUTLS_LT_AGE = @CRYPTO_GNUTLS_LT_AGE@
 CRYPTO_GNUTLS_LT_CURRENT = @CRYPTO_GNUTLS_LT_CURRENT@
 CRYPTO_GNUTLS_LT_REVISION = @CRYPTO_GNUTLS_LT_REVISION@
+CRYPTO_LIBRESSL_LT_AGE = @CRYPTO_LIBRESSL_LT_AGE@
+CRYPTO_LIBRESSL_LT_CURRENT = @CRYPTO_LIBRESSL_LT_CURRENT@
+CRYPTO_LIBRESSL_LT_REVISION = @CRYPTO_LIBRESSL_LT_REVISION@
+CRYPTO_OSSL_LT_AGE = @CRYPTO_OSSL_LT_AGE@
+CRYPTO_OSSL_LT_CURRENT = @CRYPTO_OSSL_LT_CURRENT@
+CRYPTO_OSSL_LT_REVISION = @CRYPTO_OSSL_LT_REVISION@
 CRYPTO_QUICTLS_LT_AGE = @CRYPTO_QUICTLS_LT_AGE@
 CRYPTO_QUICTLS_LT_CURRENT = @CRYPTO_QUICTLS_LT_CURRENT@
 CRYPTO_QUICTLS_LT_REVISION = @CRYPTO_QUICTLS_LT_REVISION@
@@ -343,6 +353,8 @@ ETAGS = @ETAGS@
 EXAMPLES_BORINGSSL = @EXAMPLES_BORINGSSL@
 EXAMPLES_ENABLED = @EXAMPLES_ENABLED@
 EXAMPLES_GNUTLS = @EXAMPLES_GNUTLS@
+EXAMPLES_LIBRESSL = @EXAMPLES_LIBRESSL@
+EXAMPLES_OSSL = @EXAMPLES_OSSL@
 EXAMPLES_PICOTLS = @EXAMPLES_PICOTLS@
 EXAMPLES_QUICTLS = @EXAMPLES_QUICTLS@
 EXAMPLES_WOLFSSL = @EXAMPLES_WOLFSSL@
@@ -350,6 +362,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -486,7 +499,7 @@ top_srcdir = @top_srcdir@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 SUBDIRS = includes
-EXTRA_DIST = CMakeLists.txt
+EXTRA_DIST = CMakeLists.txt config.cmake.in
 AM_CFLAGS = $(WARNCFLAGS) $(DEBUGCFLAGS) $(EXTRACFLAG)
 AM_CPPFLAGS = -I$(srcdir)/includes -I$(builddir)/includes -DBUILDING_NGTCP2
 AM_LDFLAGS = ${LIBTOOL_LDFLAGS}
@@ -534,7 +547,12 @@ OBJECTS = \
 	ngtcp2_objalloc.c \
 	ngtcp2_unreachable.c \
 	ngtcp2_transport_params.c \
-	ngtcp2_settings.c
+	ngtcp2_settings.c \
+	ngtcp2_callbacks.c \
+	ngtcp2_dcidtr.c \
+	ngtcp2_pcg.c \
+	ngtcp2_ratelim.c \
+	ngtcp2_conn_info.c
 
 HFILES = \
 	ngtcp2_pkt.h \
@@ -579,6 +597,11 @@ HFILES = \
 	ngtcp2_unreachable.h \
 	ngtcp2_transport_params.h \
 	ngtcp2_settings.h \
+	ngtcp2_callbacks.h \
+	ngtcp2_dcidtr.h \
+	ngtcp2_pcg.h \
+	ngtcp2_ratelim.h \
+	ngtcp2_conn_info.h \
 	ngtcp2_conn_stat.h \
 	ngtcp2_pktns_id.h \
 	ngtcp2_tstamp.h
@@ -672,11 +695,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_balloc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_bbr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_buf.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_callbacks.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_cc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_cid.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conn.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conn_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conv.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_crypto.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_dcidtr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_err.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_frame_chain.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_gaptr.Plo@am__quote@ # am--include-marker
@@ -688,6 +714,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_objalloc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_opl.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_path.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_pcg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_pkt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_pmtud.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_ppe.Plo@am__quote@ # am--include-marker
@@ -695,6 +722,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_pv.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_qlog.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_range.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_ratelim.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_ringbuf.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_rob.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_rst.Plo@am__quote@ # am--include-marker
@@ -971,11 +999,14 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/ngtcp2_balloc.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_bbr.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_buf.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_callbacks.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_cc.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_cid.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_conn.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_conn_info.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_conv.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_crypto.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_dcidtr.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_err.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_frame_chain.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_gaptr.Plo
@@ -987,6 +1018,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/ngtcp2_objalloc.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_opl.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_path.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_pcg.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_pkt.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_pmtud.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_ppe.Plo
@@ -994,6 +1026,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/ngtcp2_pv.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_qlog.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_range.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_ratelim.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_ringbuf.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_rob.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_rst.Plo
@@ -1056,11 +1089,14 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/ngtcp2_balloc.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_bbr.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_buf.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_callbacks.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_cc.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_cid.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_conn.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_conn_info.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_conv.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_crypto.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_dcidtr.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_err.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_frame_chain.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_gaptr.Plo
@@ -1072,6 +1108,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/ngtcp2_objalloc.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_opl.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_path.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_pcg.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_pkt.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_pmtud.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_ppe.Plo
@@ -1079,6 +1116,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/ngtcp2_pv.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_qlog.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_range.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_ratelim.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_ringbuf.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_rob.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_rst.Plo

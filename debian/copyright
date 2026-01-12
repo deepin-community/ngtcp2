@@ -3,7 +3,7 @@ Upstream-Name: ngtcp2
 Source: https://github.com/ngtcp2/ngtcp2
 
 Files: *
-Copyright: 2016-2024 ngtcp2 contributors
+Copyright: 2016-2025 ngtcp2 contributors
 License: MIT
 
 Files: aclocal.m4
@@ -20,6 +20,9 @@ Files: CMakeLists.txt
        examples/examplestest.cc
        examples/http.cc
        examples/network.h
+       examples/siphash_test.h
+       examples/siphash_test.cc
+       examples/siphash.cc
        examples/util.cc
        examples/util.h
        lib/includes/ngtcp2/ngtcp2.h
@@ -36,8 +39,8 @@ Files: CMakeLists.txt
        tests/ngtcp2_map_test.h
        third-party/CMakeLists.txt
        third-party/Makefile.am
-Copyright: 2012-2017 nghttp2 contributors
-           2016-2018 ngtcp2 contributors
+Copyright: 2012-2025 nghttp2 contributors
+           2016-2025 ngtcp2 contributors
 License: MIT
 
 Files: config.guess
@@ -56,6 +59,12 @@ Files: compile
 Copyright: 1996-2021 Free Software Foundation, Inc.
 License: GPL-2+ with Autoconf generic exception
 
+Files: examples/siphash.h
+Copyright: 2019 The BoringSSL Authors
+           2025 nghttp2 contributors
+           2025 ngtcp2 contributors
+License: ISC and MIT
+
 Files: INSTALL
 Copyright: 1994-2021 Free Software Foundation, Inc.
 License: FSFAP
@@ -71,17 +80,19 @@ License: MIT
 
 Files: ltmain.sh
 Copyright: 1996-2015 Free Software Foundation, Inc.
+           2004-2019, 2021 Bootstrap Authors
 License: GPL-2+ with Libtool Exception
 
 Files: Makefile.in
        doc/Makefile.in
-       crypto/wolfssl/Makefile.in
        crypto/Makefile.in
-       crypto/picotls/Makefile.in
-       crypto/includes/Makefile.in
        crypto/boringssl/Makefile.in
        crypto/gnutls/Makefile.in
+       crypto/includes/Makefile.in
+       crypto/ossl/Makefile.in
+       crypto/picotls/Makefile.in
        crypto/quictls/Makefile.in
+       crypto/wolfssl/Makefile.in
        examples/Makefile.in
        lib/Makefile.in
        lib/includes/Makefile.in
@@ -124,8 +135,16 @@ Copyright: Igor Sysoev
            Fedor Indutny
 License: MIT
 
+Files: third-party/urlparse/*
+Copyright: 2015 nghttp2 contributors
+           2019 nghttp3 contributors
+           2023 sfparse contributors
+           2024 urlparse contributors
+License: MIT
+
 Files: debian/*
-Copyright: 2021-2024 Sakirnth Nagarasa <sakirnth@gmail.com>
+Copyright: 2021-2025 Sakirnth Nagarasa <sakirnth@debian.org>
+           2024 Matheus Polkorny <mpolkorny@gmail.com>
 License: MIT
 
 License: FSFAP
@@ -226,6 +245,19 @@ License: GPL-3+ with Autoconf generic exception
  this file as part of a program that contains a configuration script generated
  by Autoconf, you may include it under the same distribution terms that you
  use for the rest of that program.
+
+License: ISC
+ Permission to use, copy, modify, and/or distribute this software for any
+ purpose with or without fee is hereby granted, provided that the above
+ copyright notice and this permission notice appear in all copies.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+ SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+ OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
