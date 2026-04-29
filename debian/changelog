@@ -1,3 +1,9 @@
+ngtcp2 (1.6.0-1deepin1) unstable; urgency=medium
+
+  * fix: CVE-2024-52811, heap buffer overflow in qlog
+
+ -- deepin-ci-robot <packages@deepin.org>  Tue, 29 Apr 2026 20:50:00 +0800
+
 ngtcp2 (1.6.0-1) sid; urgency=medium
 
   * New upstream version 1.6.0.
