@@ -16,6 +16,7 @@ libngtcp2_crypto_gnutls.so.8 libngtcp2-crypto-gnutls8 #MINVER#
  ngtcp2_crypto_encrypt@Base 1.1.0
  ngtcp2_crypto_encrypt_cb@Base 1.1.0
  ngtcp2_crypto_generate_regular_token@Base 1.1.0
+ ngtcp2_crypto_generate_retry_token2@Base 1.9.1
  ngtcp2_crypto_generate_retry_token@Base 1.1.0
  ngtcp2_crypto_generate_stateless_reset_token@Base 1.1.0
  ngtcp2_crypto_get_path_challenge_data_cb@Base 1.1.0
@@ -38,6 +39,7 @@ libngtcp2_crypto_gnutls.so.8 libngtcp2-crypto-gnutls8 #MINVER#
  ngtcp2_crypto_update_key@Base 1.1.0
  ngtcp2_crypto_update_key_cb@Base 1.1.0
  ngtcp2_crypto_verify_regular_token@Base 1.1.0
+ ngtcp2_crypto_verify_retry_token2@Base 1.9.1
  ngtcp2_crypto_verify_retry_token@Base 1.1.0
  ngtcp2_crypto_version_negotiation_cb@Base 1.1.0
  ngtcp2_crypto_write_connection_close@Base 1.1.0

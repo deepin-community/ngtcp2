@@ -1,15 +1,33 @@
-ngtcp2 (1.6.0-1deepin2) unstable; urgency=medium
+ngtcp2 (1.11.0-1+deb13u1) trixie-security; urgency=medium
 
-  * fix: CVE-2026-40170, stack buffer overflow in qlog transport parameter
-    serialization when processing untrusted QUIC peer transport parameters.
+  * Team upload
+  * Backport patch for CVE-2026-40170 (closes: #1134197)
 
- -- deepin-ci-robot <packages@deepin.org>  Mon, 11 May 2026 15:35:00 +0800
+ -- Samuel Henrique <samueloph@debian.org>  Sun, 19 Apr 2026 19:11:10 -0700
 
-ngtcp2 (1.6.0-1deepin1) unstable; urgency=medium
+ngtcp2 (1.11.0-1) unstable; urgency=medium
 
-  * fix: CVE-2024-52811, heap buffer overflow in qlog
+  [ Matheus Polkorny ]
+  * d/upstream/signing-key.asc: Upstream public key.
+  * d/watch: Add debian/watch file.
 
- -- deepin-ci-robot <packages@deepin.org>  Tue, 29 Apr 2026 20:50:00 +0800
+  [ Sakirnth Nagarasa ]
+  * New upstream version 1.11.0.
+  * d/gbp.conf: Adding debian/unstable as default branch.
+  * d/control: Updating Standards-Version.
+  * d/control: Updating Vsc path.
+  * d/copyright: Updating years and authors for debian/*.
+
+ -- Sakirnth Nagarasa <sakirnth@gmail.com>  Sat, 01 Mar 2025 14:51:39 +0100
+
+ngtcp2 (1.9.1-1) sid; urgency=medium
+
+  * New upstream version 1.9.1.
+    - Fix CVE-2024-52811 qlog buffer overflow.
+  * d/libngtcp2-crypto-gnutls8.symbols: Adding new symbols.
+  * d/copyright: Updating authors.
+
+ -- Sakirnth Nagarasa <sakirnth@gmail.com>  Tue, 26 Nov 2024 17:35:47 +0100
 
 ngtcp2 (1.6.0-1) sid; urgency=medium
 

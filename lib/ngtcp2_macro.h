@@ -27,14 +27,14 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif /* HAVE_CONFIG_H */
+#endif /* defined(HAVE_CONFIG_H) */
 
 #include <stddef.h>
 
 #include <ngtcp2/ngtcp2.h>
 
 #define ngtcp2_struct_of(ptr, type, member)                                    \
-  ((type *)(void *)((char *)(ptr)-offsetof(type, member)))
+  ((type *)(void *)((char *)(ptr) - offsetof(type, member)))
 
 /* ngtcp2_list_insert inserts |T| before |*PD|.  The contract is that
    this is singly linked list, and the next element is pointed by next
@@ -55,27 +55,27 @@
 #define ngtcp2_max_def(SUFFIX, T)                                              \
   static inline T ngtcp2_max_##SUFFIX(T a, T b) { return a < b ? b : a; }
 
-ngtcp2_max_def(int8, int8_t);
-ngtcp2_max_def(int16, int16_t);
-ngtcp2_max_def(int32, int32_t);
-ngtcp2_max_def(int64, int64_t);
-ngtcp2_max_def(uint8, uint8_t);
-ngtcp2_max_def(uint16, uint16_t);
-ngtcp2_max_def(uint32, uint32_t);
-ngtcp2_max_def(uint64, uint64_t);
-ngtcp2_max_def(size, size_t);
+ngtcp2_max_def(int8, int8_t)
+ngtcp2_max_def(int16, int16_t)
+ngtcp2_max_def(int32, int32_t)
+ngtcp2_max_def(int64, int64_t)
+ngtcp2_max_def(uint8, uint8_t)
+ngtcp2_max_def(uint16, uint16_t)
+ngtcp2_max_def(uint32, uint32_t)
+ngtcp2_max_def(uint64, uint64_t)
+ngtcp2_max_def(size, size_t)
 
 #define ngtcp2_min_def(SUFFIX, T)                                              \
   static inline T ngtcp2_min_##SUFFIX(T a, T b) { return a < b ? a : b; }
 
-ngtcp2_min_def(int8, int8_t);
-ngtcp2_min_def(int16, int16_t);
-ngtcp2_min_def(int32, int32_t);
-ngtcp2_min_def(int64, int64_t);
-ngtcp2_min_def(uint8, uint8_t);
-ngtcp2_min_def(uint16, uint16_t);
-ngtcp2_min_def(uint32, uint32_t);
-ngtcp2_min_def(uint64, uint64_t);
-ngtcp2_min_def(size, size_t);
+ngtcp2_min_def(int8, int8_t)
+ngtcp2_min_def(int16, int16_t)
+ngtcp2_min_def(int32, int32_t)
+ngtcp2_min_def(int64, int64_t)
+ngtcp2_min_def(uint8, uint8_t)
+ngtcp2_min_def(uint16, uint16_t)
+ngtcp2_min_def(uint32, uint32_t)
+ngtcp2_min_def(uint64, uint64_t)
+ngtcp2_min_def(size, size_t)
 
-#endif /* NGTCP2_MACRO_H */
+#endif /* !defined(NGTCP2_MACRO_H) */

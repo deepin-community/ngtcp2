@@ -51,7 +51,7 @@ int alpn_select_proto_h3_cb(WOLFSSL *ssl, const unsigned char **out,
                             unsigned char *outlen, const unsigned char *in,
                             unsigned int inlen, void *arg) {
   auto conn_ref =
-      static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
+    static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
   auto h = static_cast<HandlerBase *>(conn_ref->user_data);
   const uint8_t *alpn;
   size_t alpnlen;
@@ -94,7 +94,7 @@ int alpn_select_proto_hq_cb(WOLFSSL *ssl, const unsigned char **out,
                             unsigned char *outlen, const unsigned char *in,
                             unsigned int inlen, void *arg) {
   auto conn_ref =
-      static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
+    static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
   auto h = static_cast<HandlerBase *>(conn_ref->user_data);
   const uint8_t *alpn;
   size_t alpnlen;
@@ -144,11 +144,11 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
                            AppProtocol app_proto) {
   constexpr static unsigned char sid_ctx[] = "ngtcp2 server";
 
-#if defined(DEBUG_WOLFSSL)
+#ifdef DEBUG_WOLFSSL
   if (!config.quiet) {
     /*wolfSSL_Debugging_ON();*/
   }
-#endif
+#endif // defined(DEBUG_WOLFSSL)
 
   ssl_ctx_ = wolfSSL_CTX_new(wolfTLSv1_3_server_method());
   if (!ssl_ctx_) {
@@ -166,11 +166,11 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
 
 #ifdef WOLFSSL_EARLY_DATA
   wolfSSL_CTX_set_max_early_data(ssl_ctx_, UINT32_MAX);
-#endif
+#endif // defined(WOLFSSL_EARLY_DATA)
 
   constexpr auto ssl_opts =
-      (WOLFSSL_OP_ALL & ~WOLFSSL_OP_DONT_INSERT_EMPTY_FRAGMENTS) |
-      WOLFSSL_OP_SINGLE_ECDH_USE | WOLFSSL_OP_CIPHER_SERVER_PREFERENCE;
+    (WOLFSSL_OP_ALL & ~WOLFSSL_OP_DONT_INSERT_EMPTY_FRAGMENTS) |
+    WOLFSSL_OP_SINGLE_ECDH_USE | WOLFSSL_OP_CIPHER_SERVER_PREFERENCE;
 
   wolfSSL_CTX_set_options(ssl_ctx_, ssl_opts);
 
@@ -227,7 +227,7 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
   if (config.verify_client) {
     wolfSSL_CTX_set_verify(ssl_ctx_,
                            WOLFSSL_VERIFY_PEER | WOLFSSL_VERIFY_CLIENT_ONCE |
-                               WOLFSSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                             WOLFSSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                            verify_cb);
   }
 
@@ -244,10 +244,10 @@ void keylog_callback(const WOLFSSL *ssl, const char *line) {
   keylog_file.flush();
 }
 } // namespace
-#endif
+#endif // defined(HAVE_SECRET_CALLBACK)
 
 void TLSServerContext::enable_keylog() {
 #ifdef HAVE_SECRET_CALLBACK
   wolfSSL_CTX_set_keylog_callback(ssl_ctx_, keylog_callback);
-#endif
+#endif // defined(HAVE_SECRET_CALLBACK)
 }

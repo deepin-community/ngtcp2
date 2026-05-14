@@ -31,12 +31,13 @@
 #include "ngtcp2_test_helper.h"
 
 static const MunitTest tests[] = {
-    munit_void_test(test_ngtcp2_cbrt),
-    munit_test_end(),
+  munit_void_test(test_ngtcp2_cbrt),
+  munit_test_end(),
 };
 
 const MunitSuite cc_suite = {
-    "/cc", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE,
+  .prefix = "/cc",
+  .tests = tests,
 };
 
 void test_ngtcp2_cbrt(void) {

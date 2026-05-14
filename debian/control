@@ -13,10 +13,10 @@ Build-Depends:
  libnghttp3-dev (>= 1.1.0),
  pkgconf,
 Rules-Requires-Root: no
-Standards-Version: 4.6.2
+Standards-Version: 4.7.2
 Homepage: https://github.com/ngtcp2/ngtcp2
-Vcs-Browser: https://salsa.debian.org/saki/ngtcp2
-Vcs-Git: https://salsa.debian.org/saki/ngtcp2.git
+Vcs-Browser: https://salsa.debian.org/debian/ngtcp2
+Vcs-Git: https://salsa.debian.org/debian/ngtcp2.git
 
 Package: libngtcp2-16
 Section: libs

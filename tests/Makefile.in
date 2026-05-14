@@ -135,6 +135,7 @@ am__objects_2 = main.$(OBJEXT) ngtcp2_pkt_test.$(OBJEXT) \
 	ngtcp2_tstamp_test.$(OBJEXT) ngtcp2_cc_test.$(OBJEXT) \
 	ngtcp2_qlog_test.$(OBJEXT) ngtcp2_window_filter_test.$(OBJEXT) \
 	ngtcp2_settings_test.$(OBJEXT) ngtcp2_ppe_test.$(OBJEXT) \
+	ngtcp2_dcidtr_test.$(OBJEXT) ngtcp2_addr_test.$(OBJEXT) \
 	ngtcp2_test_helper.$(OBJEXT) munit/munit.$(OBJEXT)
 am_main_OBJECTS = $(am__objects_1) $(am__objects_2)
 main_OBJECTS = $(am_main_OBJECTS)
@@ -164,9 +165,11 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/main.Po \
-	./$(DEPDIR)/ngtcp2_acktr_test.Po ./$(DEPDIR)/ngtcp2_cc_test.Po \
+	./$(DEPDIR)/ngtcp2_acktr_test.Po \
+	./$(DEPDIR)/ngtcp2_addr_test.Po ./$(DEPDIR)/ngtcp2_cc_test.Po \
 	./$(DEPDIR)/ngtcp2_conn_test.Po \
 	./$(DEPDIR)/ngtcp2_conv_test.Po \
+	./$(DEPDIR)/ngtcp2_dcidtr_test.Po \
 	./$(DEPDIR)/ngtcp2_gaptr_test.Po \
 	./$(DEPDIR)/ngtcp2_idtr_test.Po ./$(DEPDIR)/ngtcp2_ksl_test.Po \
 	./$(DEPDIR)/ngtcp2_map_test.Po ./$(DEPDIR)/ngtcp2_pkt_test.Po \
@@ -487,6 +490,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -649,6 +653,8 @@ OBJECTS = \
 	ngtcp2_window_filter_test.c \
 	ngtcp2_settings_test.c \
 	ngtcp2_ppe_test.c \
+	ngtcp2_dcidtr_test.c \
+	ngtcp2_addr_test.c \
 	ngtcp2_test_helper.c \
 	munit/munit.c
 
@@ -677,6 +683,8 @@ HFILES = \
 	ngtcp2_window_filter_test.h \
 	ngtcp2_settings_test.h \
 	ngtcp2_ppe_test.h \
+	ngtcp2_dcidtr_test.h \
+	ngtcp2_addr_test.h \
 	ngtcp2_test_helper.h \
 	munit/munit.h
 
@@ -760,9 +768,11 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_acktr_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_addr_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_cc_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conn_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conv_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_dcidtr_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_gaptr_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_idtr_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_ksl_test.Po@am__quote@ # am--include-marker
@@ -1118,9 +1128,11 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/main.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_acktr_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_addr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_cc_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_conn_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_conv_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_dcidtr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_gaptr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_idtr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_ksl_test.Po
@@ -1190,9 +1202,11 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/main.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_acktr_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_addr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_cc_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_conn_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_conv_test.Po
+	-rm -f ./$(DEPDIR)/ngtcp2_dcidtr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_gaptr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_idtr_test.Po
 	-rm -f ./$(DEPDIR)/ngtcp2_ksl_test.Po
