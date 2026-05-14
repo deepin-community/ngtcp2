@@ -3,7 +3,7 @@ Upstream-Name: ngtcp2
 Source: https://github.com/ngtcp2/ngtcp2
 
 Files: *
-Copyright: 2016-2024 ngtcp2 contributors
+Copyright: 2016-2025 ngtcp2 contributors
 License: MIT
 
 Files: aclocal.m4
@@ -124,8 +124,16 @@ Copyright: Igor Sysoev
            Fedor Indutny
 License: MIT
 
+Files: third-party/urlparse/*
+Copyright: 2015 nghttp2 contributors
+           2019 nghttp3 contributors
+           2023 sfparse contributors
+           2024 urlparse contributors
+License: MIT
+
 Files: debian/*
-Copyright: 2021-2024 Sakirnth Nagarasa <sakirnth@gmail.com>
+Copyright: 2021-2025 Sakirnth Nagarasa <sakirnth@gmail.com>
+           2024 Matheus Polkorny <mpolkorny@gmail.com>
 License: MIT
 
 License: FSFAP

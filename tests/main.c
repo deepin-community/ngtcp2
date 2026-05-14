@@ -25,7 +25,7 @@
  */
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif /* HAVE_CONFIG_H */
+#endif /* defined(HAVE_CONFIG_H) */
 
 #include "munit.h"
 
@@ -54,37 +54,43 @@
 #include "ngtcp2_window_filter_test.h"
 #include "ngtcp2_settings_test.h"
 #include "ngtcp2_ppe_test.h"
+#include "ngtcp2_dcidtr_test.h"
+#include "ngtcp2_addr_test.h"
 
 int main(int argc, char *argv[]) {
   const MunitSuite suites[] = {
-      pkt_suite,
-      range_suite,
-      rob_suite,
-      acktr_suite,
-      map_suite,
-      transport_params_suite,
-      rtb_suite,
-      idtr_suite,
-      conn_suite,
-      ringbuf_suite,
-      conv_suite,
-      ksl_suite,
-      gaptr_suite,
-      vec_suite,
-      strm_suite,
-      pv_suite,
-      pmtud_suite,
-      str_suite,
-      tstamp_suite,
-      cc_suite,
-      qlog_suite,
-      window_filter_suite,
-      settings_suite,
-      ppe_suite,
-      {NULL, NULL, NULL, 0, MUNIT_SUITE_OPTION_NONE},
+    pkt_suite,
+    range_suite,
+    rob_suite,
+    acktr_suite,
+    map_suite,
+    transport_params_suite,
+    rtb_suite,
+    idtr_suite,
+    conn_suite,
+    ringbuf_suite,
+    conv_suite,
+    ksl_suite,
+    gaptr_suite,
+    vec_suite,
+    strm_suite,
+    pv_suite,
+    pmtud_suite,
+    str_suite,
+    tstamp_suite,
+    cc_suite,
+    qlog_suite,
+    window_filter_suite,
+    settings_suite,
+    ppe_suite,
+    dcidtr_suite,
+    addr_suite,
+    {0},
   };
   const MunitSuite suite = {
-      "", NULL, suites, 1, MUNIT_SUITE_OPTION_NONE,
+    .prefix = "",
+    .suites = suites,
+    .iterations = 1,
   };
 
   init_static_path();

@@ -30,14 +30,16 @@
 #include "ngtcp2_test_helper.h"
 
 static const MunitTest tests[] = {
-    munit_void_test(test_ngtcp2_vec_split),
-    munit_void_test(test_ngtcp2_vec_merge),
-    munit_void_test(test_ngtcp2_vec_len_varint),
-    munit_test_end(),
+  munit_void_test(test_ngtcp2_vec_split),
+  munit_void_test(test_ngtcp2_vec_merge),
+  munit_void_test(test_ngtcp2_vec_len_varint),
+  munit_void_test(test_ngtcp2_vec_copy_at_most),
+  munit_test_end(),
 };
 
 const MunitSuite vec_suite = {
-    "/vec", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE,
+  .prefix = "/vec",
+  .tests = tests,
 };
 
 void test_ngtcp2_vec_split(void) {
@@ -55,7 +57,7 @@ void test_ngtcp2_vec_split(void) {
   b[0].len = 0;
   b[0].base = NULL;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 135, 16);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 135, 16);
 
   assert_ptrdiff(0, ==, nsplit);
   assert_size(1, ==, acnt);
@@ -74,7 +76,7 @@ void test_ngtcp2_vec_split(void) {
   b[0].len = 0;
   b[0].base = NULL;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 87, 16);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 87, 16);
 
   assert_ptrdiff(48, ==, nsplit);
   assert_size(1, ==, acnt);
@@ -95,7 +97,7 @@ void test_ngtcp2_vec_split(void) {
   b[0].len = 0;
   b[0].base = NULL;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 33, 16);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 33, 16);
 
   assert_ptrdiff(89, ==, nsplit);
   assert_size(1, ==, acnt);
@@ -118,7 +120,7 @@ void test_ngtcp2_vec_split(void) {
   b[0].len = 0;
   b[0].base = NULL;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 34, 16);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 34, 16);
 
   assert_ptrdiff(88 + 211, ==, nsplit);
   assert_size(2, ==, acnt);
@@ -146,7 +148,7 @@ void test_ngtcp2_vec_split(void) {
   b[1].len = 3;
   b[1].base = nulldata + 33 + 89 + 17;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 33, 16);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 33, 16);
 
   assert_ptrdiff(89, ==, nsplit);
   assert_size(1, ==, acnt);
@@ -172,7 +174,7 @@ void test_ngtcp2_vec_split(void) {
   b[1].len = 3;
   b[1].base = nulldata + 33 + 89 + 17;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 34, 16);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 34, 16);
 
   assert_ptrdiff(88, ==, nsplit);
   assert_size(2, ==, acnt);
@@ -202,7 +204,7 @@ void test_ngtcp2_vec_split(void) {
   b[1].len = 3;
   b[1].base = nulldata + 33 + 89 + 211 + 17;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 34, 16);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 34, 16);
 
   assert_ptrdiff(88 + 211, ==, nsplit);
   assert_size(2, ==, acnt);
@@ -232,7 +234,7 @@ void test_ngtcp2_vec_split(void) {
   b[1].len = 3;
   b[1].base = nulldata + 256 + 17;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 33, 16);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 33, 16);
 
   assert_ptrdiff(89, ==, nsplit);
   assert_size(1, ==, acnt);
@@ -257,7 +259,7 @@ void test_ngtcp2_vec_split(void) {
   b[0].len = 17;
   b[0].base = nulldata + 33 + 89;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 32, 1);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 32, 1);
 
   assert_ptrdiff(-1, ==, nsplit);
 
@@ -272,7 +274,7 @@ void test_ngtcp2_vec_split(void) {
   b[0].len = 17;
   b[0].base = nulldata + 256;
 
-  nsplit = ngtcp2_vec_split(a, &acnt, b, &bcnt, 33, 1);
+  nsplit = ngtcp2_vec_split(b, &bcnt, a, &acnt, 33, 1);
 
   assert_ptrdiff(-1, ==, nsplit);
 }
@@ -415,6 +417,89 @@ void test_ngtcp2_vec_merge(void) {
   nmerged = ngtcp2_vec_merge(a, &acnt, b, &bcnt, 3, 1);
 
   assert_size(0, ==, nmerged);
+
+  /* both source and destination have 0 elements */
+  acnt = 0;
+  bcnt = 0;
+
+  nmerged = ngtcp2_vec_merge(a, &acnt, b, &bcnt, 1, 16);
+
+  assert_size(0, ==, nmerged);
+
+  /* Empty destination; b[0] cannot be fully merged */
+  acnt = 0;
+  bcnt = 1;
+
+  b[0].len = 100;
+  b[0].base = nulldata;
+
+  nmerged = ngtcp2_vec_merge(a, &acnt, b, &bcnt, 99, 1);
+
+  assert_size(99, ==, nmerged);
+  assert_ptr_equal(nulldata, a[0].base);
+  assert_size(99, ==, a[0].len);
+  assert_ptr_equal(nulldata + 99, b[0].base);
+  assert_size(1, ==, b[0].len);
+
+  /* Empty destination; b[0] can be fully merged */
+  acnt = 0;
+  bcnt = 2;
+
+  b[0].len = 100;
+  b[0].base = nulldata;
+  b[1].len = 55;
+  b[1].base = nulldata;
+
+  nmerged = ngtcp2_vec_merge(a, &acnt, b, &bcnt, 103, 2);
+
+  assert_size(103, ==, nmerged);
+  assert_size(2, ==, acnt);
+  assert_ptr_equal(nulldata, a[0].base);
+  assert_size(100, ==, a[0].len);
+  assert_ptr_equal(nulldata, a[1].base);
+  assert_size(3, ==, a[1].len);
+  assert_size(1, ==, bcnt);
+  assert_ptr_equal(nulldata + 3, b[0].base);
+  assert_size(52, ==, b[0].len);
+
+  /* Empty destination; b[0] can be fully merged, and b[0] and b[1]
+     are contiguous. */
+  acnt = 0;
+  bcnt = 2;
+
+  b[0].len = 100;
+  b[0].base = nulldata;
+  b[1].len = 55;
+  b[1].base = nulldata + 100;
+
+  nmerged = ngtcp2_vec_merge(a, &acnt, b, &bcnt, 103, 2);
+
+  assert_size(103, ==, nmerged);
+  assert_size(1, ==, acnt);
+  assert_ptr_equal(nulldata, a[0].base);
+  assert_size(103, ==, a[0].len);
+  assert_size(1, ==, bcnt);
+  assert_ptr_equal(nulldata + 103, b[0].base);
+  assert_size(52, ==, b[0].len);
+
+  /* Empty destination; b[0] can be fully merged, and hit maxcnt */
+  acnt = 0;
+  bcnt = 2;
+
+  b[0].len = 100;
+  b[0].base = nulldata;
+  b[1].len = 55;
+  b[1].base = nulldata;
+
+  nmerged = ngtcp2_vec_merge(a, &acnt, b, &bcnt, 103, 1);
+
+  assert_size(100, ==, nmerged);
+  assert_size(1, ==, acnt);
+  assert_ptr_equal(nulldata, a[0].base);
+  assert_size(100, ==, a[0].len);
+  assert_size(1, ==, bcnt);
+  assert_ptr_equal(nulldata, b[0].base);
+  assert_size(55, ==, b[0].len);
 }
 
 void test_ngtcp2_vec_len_varint(void) {
@@ -422,16 +507,119 @@ void test_ngtcp2_vec_len_varint(void) {
 
 #if SIZE_MAX == UINT64_MAX
   {
-    ngtcp2_vec v[] = {{NULL, NGTCP2_MAX_VARINT}, {NULL, 1}};
+    ngtcp2_vec v[] = {
+      {
+        .len = NGTCP2_MAX_VARINT,
+      },
+      {
+        .len = 1,
+      },
+    };
 
     assert_int64(-1, ==, ngtcp2_vec_len_varint(v, ngtcp2_arraylen(v)));
   }
 
   {
-    ngtcp2_vec v[] = {{NULL, NGTCP2_MAX_VARINT - 1}, {NULL, 1}};
+    ngtcp2_vec v[] = {
+      {
+        .len = NGTCP2_MAX_VARINT - 1,
+      },
+      {
+        .len = 1,
+      },
+    };
 
     assert_int64(NGTCP2_MAX_VARINT, ==,
                  ngtcp2_vec_len_varint(v, ngtcp2_arraylen(v)));
   }
 #endif /* SIZE_MAX == UINT64_MAX */
+}
+
+void test_ngtcp2_vec_copy_at_most(void) {
+  uint8_t nulldata[1024] = {0};
+  size_t n;
+
+  /* Skip 0 length vector */
+  {
+    ngtcp2_vec dst[4];
+    const ngtcp2_vec src[] = {
+      {
+        .base = nulldata,
+        .len = 1,
+      },
+      {
+        .base = nulldata + 1,
+        .len = 0,
+      },
+      {
+        .base = nulldata + 1,
+        .len = 77,
+      },
+      {
+        .base = nulldata + 1 + 77,
+        .len = 999,
+      },
+    };
+
+    n = ngtcp2_vec_copy_at_most(dst, ngtcp2_arraylen(dst), src,
+                                ngtcp2_arraylen(src), 1 + 77 + 999);
+
+    assert_size(3, ==, n);
+    assert_ptr_equal(src[0].base, dst[0].base);
+    assert_size(src[0].len, ==, dst[0].len);
+    assert_ptr_equal(src[2].base, dst[1].base);
+    assert_size(src[2].len, ==, dst[1].len);
+    assert_ptr_equal(src[3].base, dst[2].base);
+    assert_size(src[3].len, ==, dst[2].len);
+  }
+
+  /* Cut last byte */
+  {
+    ngtcp2_vec dst[2];
+    const ngtcp2_vec src[] = {
+      {
+        .base = nulldata,
+        .len = 7,
+      },
+      {
+        .base = nulldata + 7,
+        .len = 100,
+      },
+    };
+
+    n = ngtcp2_vec_copy_at_most(dst, ngtcp2_arraylen(dst), src,
+                                ngtcp2_arraylen(src), 106);
+
+    assert_size(2, ==, n);
+    assert_ptr_equal(src[0].base, dst[0].base);
+    assert_size(src[0].len, ==, dst[0].len);
+    assert_ptr_equal(src[1].base, dst[1].base);
+    assert_size(99, ==, dst[1].len);
+  }
+
+  /* 0 length vectors */
+  {
+    ngtcp2_vec dst[1];
+    const ngtcp2_vec src[1];
+
+    n = ngtcp2_vec_copy_at_most(dst, 0, src, 0, 100);
+
+    assert_size(0, ==, n);
+  }
+
+  /* left == 0 */
+  {
+    ngtcp2_vec dst[1];
+    const ngtcp2_vec src[] = {
+      {
+        .base = nulldata,
+        .len = 999,
+      },
+    };
+
+    n = ngtcp2_vec_copy_at_most(dst, ngtcp2_arraylen(dst), src,
+                                ngtcp2_arraylen(src), 0);
+
+    assert_size(0, ==, n);
+  }
 }

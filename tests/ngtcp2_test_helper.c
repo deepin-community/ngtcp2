@@ -111,31 +111,29 @@ static int null_hp_mask(uint8_t *dest, const ngtcp2_crypto_cipher *hp,
   return 0;
 }
 
-size_t write_pkt(uint8_t *out, size_t outlen, const ngtcp2_cid *dcid,
-                 int64_t pkt_num, ngtcp2_frame *fr, size_t frlen,
-                 ngtcp2_crypto_km *ckm) {
-  return write_pkt_flags(out, outlen, NGTCP2_PKT_FLAG_NONE, dcid, pkt_num, fr,
-                         frlen, ckm);
-}
-
-size_t write_pkt_flags(uint8_t *out, size_t outlen, uint8_t flags,
-                       const ngtcp2_cid *dcid, int64_t pkt_num,
-                       ngtcp2_frame *fr, size_t frlen, ngtcp2_crypto_km *ckm) {
-  ngtcp2_crypto_cc cc;
+/*
+ * write_short_pkt writes a QUIC short header packet containing
+ * |frlen| frames pointed by |fr| into |out| whose capacity is
+ * |outlen|.  This function returns the number of bytes written.
+ */
+static size_t write_short_pkt(uint8_t *out, size_t outlen, uint8_t flags,
+                              const ngtcp2_cid *dcid, int64_t pkt_num,
+                              ngtcp2_frame *fr, size_t frlen,
+                              ngtcp2_crypto_km *ckm) {
+  ngtcp2_crypto_cc cc = {
+    .encrypt = null_encrypt,
+    .hp_mask = null_hp_mask,
+    .ckm = ckm,
+    .aead.max_overhead = NGTCP2_FAKE_AEAD_OVERHEAD,
+  };
   ngtcp2_ppe ppe;
   ngtcp2_pkt_hd hd;
   int rv;
   ngtcp2_ssize n;
   size_t i;
 
-  memset(&cc, 0, sizeof(cc));
-  cc.encrypt = null_encrypt;
-  cc.hp_mask = null_hp_mask;
-  cc.ckm = ckm;
-  cc.aead.max_overhead = NGTCP2_FAKE_AEAD_OVERHEAD;
-
   ngtcp2_pkt_hd_init(&hd, flags, NGTCP2_PKT_1RTT, dcid, NULL, pkt_num, 4,
-                     NGTCP2_PROTO_VER_V1, 0);
+                     NGTCP2_PROTO_VER_V1);
 
   ngtcp2_ppe_init(&ppe, out, outlen, 0, &cc);
   rv = ngtcp2_ppe_encode_hd(&ppe, &hd);
@@ -152,22 +150,28 @@ size_t write_pkt_flags(uint8_t *out, size_t outlen, uint8_t flags,
   return (size_t)n;
 }
 
-static size_t write_long_header_pkt_generic(
-    uint8_t *out, size_t outlen, uint8_t flags, uint8_t pkt_type,
-    const ngtcp2_cid *dcid, const ngtcp2_cid *scid, int64_t pkt_num,
-    uint32_t version, const uint8_t *token, size_t tokenlen, ngtcp2_frame *fr,
-    size_t frlen, ngtcp2_crypto_km *ckm) {
-  ngtcp2_crypto_cc cc;
+/*
+ * write_long_pkt writes a QUIC long header packet containing |frlen|
+ * frames pointed by |fr| into |out| whose capacity is |outlen|.  This
+ * function returns the number of bytes written.
+ */
+static size_t write_long_pkt(uint8_t *out, size_t outlen, uint8_t flags,
+                             uint8_t pkt_type, const ngtcp2_cid *dcid,
+                             const ngtcp2_cid *scid, int64_t pkt_num,
+                             uint32_t version, const uint8_t *token,
+                             size_t tokenlen, ngtcp2_frame *fr, size_t frlen,
+                             ngtcp2_crypto_km *ckm) {
+  ngtcp2_crypto_cc cc = {
+    .encrypt = null_encrypt,
+    .hp_mask = null_hp_mask,
+    .ckm = ckm,
+  };
   ngtcp2_ppe ppe;
   ngtcp2_pkt_hd hd;
   int rv;
   ngtcp2_ssize n;
   size_t i;
 
-  memset(&cc, 0, sizeof(cc));
-  cc.encrypt = null_encrypt;
-  cc.hp_mask = null_hp_mask;
-  cc.ckm = ckm;
   switch (pkt_type) {
   case NGTCP2_PKT_INITIAL:
     cc.aead.max_overhead = NGTCP2_INITIAL_AEAD_OVERHEAD;
@@ -185,11 +189,10 @@ static size_t write_long_header_pkt_generic(
      pretend that it is QUIC v1 here and rewrite the version field
      later. */
   ngtcp2_pkt_hd_init(
-      &hd, NGTCP2_PKT_FLAG_LONG_FORM | flags, pkt_type, dcid, scid, pkt_num, 4,
-      version != NGTCP2_PROTO_VER_V1 && version != NGTCP2_PROTO_VER_V2
-          ? NGTCP2_PROTO_VER_V1
-          : version,
-      0);
+    &hd, NGTCP2_PKT_FLAG_LONG_FORM | flags, pkt_type, dcid, scid, pkt_num, 4,
+    version != NGTCP2_PROTO_VER_V1 && version != NGTCP2_PROTO_VER_V2
+      ? NGTCP2_PROTO_VER_V1
+      : version);
 
   hd.token = token;
   hd.tokenlen = tokenlen;
@@ -207,44 +210,6 @@ static size_t write_long_header_pkt_generic(
   n = ngtcp2_ppe_final(&ppe, NULL);
   assert(n > 0);
   return (size_t)n;
-}
-
-size_t write_initial_pkt_flags(uint8_t *out, size_t outlen, uint8_t flags,
-                               const ngtcp2_cid *dcid, const ngtcp2_cid *scid,
-                               int64_t pkt_num, uint32_t version,
-                               const uint8_t *token, size_t tokenlen,
-                               ngtcp2_frame *fr, size_t frlen,
-                               ngtcp2_crypto_km *ckm) {
-  return write_long_header_pkt_generic(out, outlen, flags, NGTCP2_PKT_INITIAL,
-                                       dcid, scid, pkt_num, version, token,
-                                       tokenlen, fr, frlen, ckm);
-}
-
-size_t write_initial_pkt(uint8_t *out, size_t outlen, const ngtcp2_cid *dcid,
-                         const ngtcp2_cid *scid, int64_t pkt_num,
-                         uint32_t version, const uint8_t *token,
-                         size_t tokenlen, ngtcp2_frame *fr, size_t frlen,
-                         ngtcp2_crypto_km *ckm) {
-  return write_initial_pkt_flags(out, outlen, NGTCP2_PKT_FLAG_NONE, dcid, scid,
-                                 pkt_num, version, token, tokenlen, fr, frlen,
-                                 ckm);
-}
-
-size_t write_handshake_pkt(uint8_t *out, size_t outlen, const ngtcp2_cid *dcid,
-                           const ngtcp2_cid *scid, int64_t pkt_num,
-                           uint32_t version, ngtcp2_frame *fr, size_t frlen,
-                           ngtcp2_crypto_km *ckm) {
-  return write_long_header_pkt_generic(
-      out, outlen, NGTCP2_PKT_FLAG_NONE, NGTCP2_PKT_HANDSHAKE, dcid, scid,
-      pkt_num, version, NULL, 0, fr, frlen, ckm);
-}
-
-size_t write_0rtt_pkt(uint8_t *out, size_t outlen, const ngtcp2_cid *dcid,
-                      const ngtcp2_cid *scid, int64_t pkt_num, uint32_t version,
-                      ngtcp2_frame *fr, size_t frlen, ngtcp2_crypto_km *ckm) {
-  return write_long_header_pkt_generic(out, outlen, NGTCP2_PKT_FLAG_NONE,
-                                       NGTCP2_PKT_0RTT, dcid, scid, pkt_num,
-                                       version, NULL, 0, fr, frlen, ckm);
 }
 
 ngtcp2_strm *open_stream(ngtcp2_conn *conn, int64_t stream_id) {
@@ -412,4 +377,63 @@ void path_init(ngtcp2_path_storage *path, uint32_t local_addr,
 
   ngtcp2_path_storage_init(path, (ngtcp2_sockaddr *)&la, sizeof(la),
                            (ngtcp2_sockaddr *)&ra, sizeof(ra), NULL);
+}
+
+void ngtcp2_tpe_init(ngtcp2_tpe *tpe, const ngtcp2_cid *dcid,
+                     const ngtcp2_cid *scid, uint32_t version) {
+  memset(tpe, 0, sizeof(*tpe));
+
+  tpe->dcid = *dcid;
+
+  if (scid) {
+    tpe->scid = *scid;
+  }
+
+  tpe->version = version;
+  tpe->initial.last_pkt_num = -1;
+  tpe->handshake.last_pkt_num = -1;
+  tpe->app.last_pkt_num = -1;
+}
+
+void ngtcp2_tpe_init_conn(ngtcp2_tpe *tpe, ngtcp2_conn *conn) {
+  ngtcp2_tpe_init(tpe, &conn->oscid, ngtcp2_conn_get_dcid(conn),
+                  conn->client_chosen_version);
+
+  if (conn->in_pktns) {
+    tpe->initial.ckm = conn->in_pktns->crypto.rx.ckm;
+  }
+
+  if (conn->hs_pktns) {
+    tpe->handshake.ckm = conn->hs_pktns->crypto.rx.ckm;
+  }
+
+  tpe->early.ckm = conn->early.ckm;
+  tpe->app.ckm = conn->pktns.crypto.rx.ckm;
+}
+
+size_t ngtcp2_tpe_write_initial(ngtcp2_tpe *tpe, uint8_t *out, size_t outlen,
+                                ngtcp2_frame *fr, size_t frlen) {
+  return write_long_pkt(out, outlen, tpe->flags, NGTCP2_PKT_INITIAL, &tpe->dcid,
+                        &tpe->scid, ++tpe->initial.last_pkt_num, tpe->version,
+                        tpe->token, tpe->tokenlen, fr, frlen, tpe->initial.ckm);
+}
+
+size_t ngtcp2_tpe_write_handshake(ngtcp2_tpe *tpe, uint8_t *out, size_t outlen,
+                                  ngtcp2_frame *fr, size_t frlen) {
+  return write_long_pkt(out, outlen, tpe->flags, NGTCP2_PKT_HANDSHAKE,
+                        &tpe->dcid, &tpe->scid, ++tpe->handshake.last_pkt_num,
+                        tpe->version, NULL, 0, fr, frlen, tpe->handshake.ckm);
+}
+
+size_t ngtcp2_tpe_write_0rtt(ngtcp2_tpe *tpe, uint8_t *out, size_t outlen,
+                             ngtcp2_frame *fr, size_t frlen) {
+  return write_long_pkt(out, outlen, tpe->flags, NGTCP2_PKT_0RTT, &tpe->dcid,
+                        &tpe->scid, ++tpe->app.last_pkt_num, tpe->version, NULL,
+                        0, fr, frlen, tpe->early.ckm);
+}
+
+size_t ngtcp2_tpe_write_1rtt(ngtcp2_tpe *tpe, uint8_t *out, size_t outlen,
+                             ngtcp2_frame *fr, size_t frlen) {
+  return write_short_pkt(out, outlen, tpe->flags, &tpe->dcid,
+                         ++tpe->app.last_pkt_num, fr, frlen, tpe->app.ckm);
 }

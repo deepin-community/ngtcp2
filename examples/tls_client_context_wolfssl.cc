@@ -54,7 +54,7 @@ int new_session_cb(WOLFSSL *ssl, WOLFSSL_SESSION *session) {
   std::cerr << "new_session_cb called" << std::endl;
 
   auto conn_ref =
-      static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
+    static_cast<ngtcp2_crypto_conn_ref *>(wolfSSL_get_app_data(ssl));
   auto c = static_cast<ClientBase *>(conn_ref->user_data);
 
   c->ticket_received();
@@ -96,9 +96,9 @@ int new_session_cb(WOLFSSL *ssl, WOLFSSL_SESSION *session) {
   }
   std::cerr << "new_session_cb: wrote " << sz << " of session data"
             << std::endl;
-#else
+#else  // !defined(HAVE_SESSION_TICKET)
   std::cerr << "TLS session tickets not enabled in wolfSSL " << std::endl;
-#endif
+#endif // !defined(HAVE_SESSION_TICKET)
   return 0;
 }
 } // namespace
@@ -134,7 +134,7 @@ int TLSClientContext::init(const char *private_key_file,
   }
 
   if (wolfSSL_CTX_set1_curves_list(
-          ssl_ctx_, const_cast<char *>(config.groups)) != WOLFSSL_SUCCESS) {
+        ssl_ctx_, const_cast<char *>(config.groups)) != WOLFSSL_SUCCESS) {
     std::cerr << "wolfSSL_CTX_set1_curves_list(" << config.groups << ") failed"
               << std::endl;
     return -1;
@@ -176,10 +176,10 @@ void keylog_callback(const WOLFSSL *ssl, const char *line) {
   keylog_file.flush();
 }
 } // namespace
-#endif
+#endif // defined(HAVE_SECRET_CALLBACK)
 
 void TLSClientContext::enable_keylog() {
 #ifdef HAVE_SECRET_CALLBACK
   wolfSSL_CTX_set_keylog_callback(ssl_ctx_, keylog_callback);
-#endif
+#endif // defined(HAVE_SECRET_CALLBACK)
 }

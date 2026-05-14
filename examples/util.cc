@@ -27,10 +27,10 @@
 
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
-#endif // HAVE_ARPA_INET_H
+#endif // defined(HAVE_ARPA_INET_H)
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
-#endif
+#endif // defined(HAVE_NETINET_IN_H)
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -170,8 +170,8 @@ std::mt19937 make_mt19937() {
 
 ngtcp2_tstamp timestamp() {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(
-             std::chrono::steady_clock::now().time_since_epoch())
-      .count();
+           std::chrono::steady_clock::now().time_since_epoch())
+    .count();
 }
 
 bool numeric_host(const char *hostname) {
@@ -349,13 +349,15 @@ int hexdump(FILE *out, const void *data, size_t datalen) {
   return 0;
 }
 
-std::string_view make_cid_key(const ngtcp2_cid *cid) {
-  return make_cid_key({cid->data, cid->datalen});
-}
+ngtcp2_cid make_cid_key(std::span<const uint8_t> cid) {
+  assert(cid.size() <= NGTCP2_MAX_CIDLEN);
 
-std::string_view make_cid_key(std::span<const uint8_t> cid) {
-  return std::string_view{reinterpret_cast<const char *>(cid.data()),
-                          cid.size()};
+  ngtcp2_cid res;
+
+  std::ranges::copy(cid, std::begin(res.data));
+  res.datalen = cid.size();
+
+  return res;
 }
 
 std::string straddr(const sockaddr *sa, socklen_t salen) {
@@ -716,14 +718,14 @@ int create_nonblock_socket(int domain, int type, int protocol) {
   if (fd == -1) {
     return -1;
   }
-#else  // !SOCK_NONBLOCK
+#else  // !defined(SOCK_NONBLOCK)
   auto fd = socket(domain, type, protocol);
   if (fd == -1) {
     return -1;
   }
 
   make_socket_nonblocking(fd);
-#endif // !SOCK_NONBLOCK
+#endif // !defined(SOCK_NONBLOCK)
 
   return fd;
 }

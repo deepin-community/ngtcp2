@@ -25,21 +25,25 @@
  */
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif // HAVE_CONFIG_H
+#endif // defined(HAVE_CONFIG_H)
 
 #include "munit.h"
 
 // include test cases' include files here
 #include "util_test.h"
+#include "siphash_test.h"
 
 int main(int argc, char *argv[]) {
   const MunitSuite suites[] = {
-      ngtcp2::util_suite,
-      {NULL, NULL, NULL, 0, MUNIT_SUITE_OPTION_NONE},
+    ngtcp2::util_suite,
+    ngtcp2::siphash_suite,
+    {},
   };
   const MunitSuite suite = {
-      "", NULL, suites, 1, MUNIT_SUITE_OPTION_NONE,
+    .prefix = "",
+    .suites = suites,
+    .iterations = 1,
   };
 
-  return munit_suite_main(&suite, NULL, argc, argv);
+  return munit_suite_main(&suite, nullptr, argc, argv);
 }

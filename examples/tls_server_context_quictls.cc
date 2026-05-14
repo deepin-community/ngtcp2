@@ -184,7 +184,7 @@ SSL_TICKET_RETURN decrypt_ticket_cb(SSL *ssl, SSL_SESSION *session,
   size_t verlen;
 
   if (!SSL_SESSION_get0_ticket_appdata(
-          session, reinterpret_cast<void **>(&pver), &verlen) ||
+        session, reinterpret_cast<void **>(&pver), &verlen) ||
       verlen != sizeof(ver)) {
     switch (status) {
     case SSL_TICKET_SUCCESS:
@@ -219,7 +219,7 @@ SSL_TICKET_RETURN decrypt_ticket_cb(SSL *ssl, SSL_SESSION *session,
   }
 }
 } // namespace
-#endif // !LIBRESSL_VERSION_NUMBER
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
 
 int TLSServerContext::init(const char *private_key_file, const char *cert_file,
                            AppProtocol app_proto) {
@@ -227,7 +227,7 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
 
   ssl_ctx_ = SSL_CTX_new(TLS_server_method());
   if (!ssl_ctx_) {
-    std::cerr << "SSSL_CTX_new: " << ERR_error_string(ERR_get_error(), nullptr)
+    std::cerr << "SSL_CTX_new: " << ERR_error_string(ERR_get_error(), nullptr)
               << std::endl;
     return -1;
   }
@@ -245,8 +245,8 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
                             SSL_OP_CIPHER_SERVER_PREFERENCE
 #ifndef LIBRESSL_VERSION_NUMBER
                             | SSL_OP_NO_ANTI_REPLAY
-#endif // !LIBRESSL_VERSION_NUMBER
-      ;
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
+    ;
 
   SSL_CTX_set_options(ssl_ctx_, ssl_opts);
 
@@ -298,14 +298,14 @@ int TLSServerContext::init(const char *private_key_file, const char *cert_file,
   if (config.verify_client) {
     SSL_CTX_set_verify(ssl_ctx_,
                        SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE |
-                           SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                         SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                        verify_cb);
   }
 
 #ifndef LIBRESSL_VERSION_NUMBER
   SSL_CTX_set_session_ticket_cb(ssl_ctx_, gen_ticket_cb, decrypt_ticket_cb,
                                 nullptr);
-#endif // !LIBRESSL_VERSION_NUMBER
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
 
   return 0;
 }

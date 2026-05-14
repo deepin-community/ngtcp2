@@ -161,7 +161,7 @@ am__objects_2 = ngtcp2_pkt.lo ngtcp2_conv.lo ngtcp2_str.lo \
 	ngtcp2_pmtud.lo ngtcp2_version.lo ngtcp2_rst.lo \
 	ngtcp2_window_filter.lo ngtcp2_opl.lo ngtcp2_balloc.lo \
 	ngtcp2_objalloc.lo ngtcp2_unreachable.lo \
-	ngtcp2_transport_params.lo ngtcp2_settings.lo
+	ngtcp2_transport_params.lo ngtcp2_settings.lo ngtcp2_dcidtr.lo
 am_libngtcp2_la_OBJECTS = $(am__objects_1) $(am__objects_2)
 libngtcp2_la_OBJECTS = $(am_libngtcp2_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -191,8 +191,8 @@ am__depfiles_remade = ./$(DEPDIR)/ngtcp2_acktr.Plo \
 	./$(DEPDIR)/ngtcp2_bbr.Plo ./$(DEPDIR)/ngtcp2_buf.Plo \
 	./$(DEPDIR)/ngtcp2_cc.Plo ./$(DEPDIR)/ngtcp2_cid.Plo \
 	./$(DEPDIR)/ngtcp2_conn.Plo ./$(DEPDIR)/ngtcp2_conv.Plo \
-	./$(DEPDIR)/ngtcp2_crypto.Plo ./$(DEPDIR)/ngtcp2_err.Plo \
-	./$(DEPDIR)/ngtcp2_frame_chain.Plo \
+	./$(DEPDIR)/ngtcp2_crypto.Plo ./$(DEPDIR)/ngtcp2_dcidtr.Plo \
+	./$(DEPDIR)/ngtcp2_err.Plo ./$(DEPDIR)/ngtcp2_frame_chain.Plo \
 	./$(DEPDIR)/ngtcp2_gaptr.Plo ./$(DEPDIR)/ngtcp2_idtr.Plo \
 	./$(DEPDIR)/ngtcp2_ksl.Plo ./$(DEPDIR)/ngtcp2_log.Plo \
 	./$(DEPDIR)/ngtcp2_map.Plo ./$(DEPDIR)/ngtcp2_mem.Plo \
@@ -350,6 +350,7 @@ EXEEXT = @EXEEXT@
 EXTRACFLAG = @EXTRACFLAG@
 EXTRA_DEFS = @EXTRA_DEFS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
@@ -486,7 +487,7 @@ top_srcdir = @top_srcdir@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 SUBDIRS = includes
-EXTRA_DIST = CMakeLists.txt
+EXTRA_DIST = CMakeLists.txt config.cmake.in
 AM_CFLAGS = $(WARNCFLAGS) $(DEBUGCFLAGS) $(EXTRACFLAG)
 AM_CPPFLAGS = -I$(srcdir)/includes -I$(builddir)/includes -DBUILDING_NGTCP2
 AM_LDFLAGS = ${LIBTOOL_LDFLAGS}
@@ -534,7 +535,8 @@ OBJECTS = \
 	ngtcp2_objalloc.c \
 	ngtcp2_unreachable.c \
 	ngtcp2_transport_params.c \
-	ngtcp2_settings.c
+	ngtcp2_settings.c \
+	ngtcp2_dcidtr.c
 
 HFILES = \
 	ngtcp2_pkt.h \
@@ -579,6 +581,7 @@ HFILES = \
 	ngtcp2_unreachable.h \
 	ngtcp2_transport_params.h \
 	ngtcp2_settings.h \
+	ngtcp2_dcidtr.h \
 	ngtcp2_conn_stat.h \
 	ngtcp2_pktns_id.h \
 	ngtcp2_tstamp.h
@@ -677,6 +680,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conn.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_conv.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_crypto.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_dcidtr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_err.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_frame_chain.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngtcp2_gaptr.Plo@am__quote@ # am--include-marker
@@ -976,6 +980,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/ngtcp2_conn.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_conv.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_crypto.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_dcidtr.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_err.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_frame_chain.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_gaptr.Plo
@@ -1061,6 +1066,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/ngtcp2_conn.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_conv.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_crypto.Plo
+	-rm -f ./$(DEPDIR)/ngtcp2_dcidtr.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_err.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_frame_chain.Plo
 	-rm -f ./$(DEPDIR)/ngtcp2_gaptr.Plo

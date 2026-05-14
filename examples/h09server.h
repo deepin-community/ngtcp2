@@ -22,12 +22,12 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef H09SERVER_H
+#define H09SERVER_H
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif // HAVE_CONFIG_H
+#endif // defined(HAVE_CONFIG_H)
 
 #include <vector>
 #include <unordered_map>
@@ -48,12 +48,13 @@
 #include "tls_server_context.h"
 #include "network.h"
 #include "shared.h"
+#include "util.h"
 
 using namespace ngtcp2;
 
 struct HTTPHeader {
   HTTPHeader(const std::string_view &name, const std::string_view &value)
-      : name(name), value(value) {}
+    : name(name), value(value) {}
 
   std::string_view name;
   std::string_view value;
@@ -187,18 +188,6 @@ private:
   } tx_;
 };
 
-struct string_hash {
-  using is_transparent = void;
-
-  size_t operator()(const std::string_view &s) const {
-    return std::hash<std::string_view>{}(s);
-  }
-
-  size_t operator()(const std::string &s) const {
-    return std::hash<std::string>{}(s);
-  }
-};
-
 class Server {
 public:
   Server(struct ev_loop *loop, TLSServerContext &tls_ctx);
@@ -244,8 +233,7 @@ public:
   void on_stateless_reset_regen();
 
 private:
-  std::unordered_map<std::string, Handler *, string_hash, std::equal_to<>>
-      handlers_;
+  std::unordered_map<ngtcp2_cid, Handler *> handlers_;
   struct ev_loop *loop_;
   std::vector<Endpoint> endpoints_;
   TLSServerContext &tls_ctx_;
@@ -254,4 +242,4 @@ private:
   size_t stateless_reset_bucket_;
 };
 
-#endif // SERVER_H
+#endif // !defined(H09SERVER_H)

@@ -27,7 +27,7 @@
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
-#endif /* HAVE_CONFIG_H */
+#endif /* defined(HAVE_CONFIG_H) */
 
 #define MUNIT_ENABLE_ASSERT_ALIASES
 
@@ -35,8 +35,9 @@
 
 extern const MunitSuite vec_suite;
 
-munit_void_test_decl(test_ngtcp2_vec_split);
-munit_void_test_decl(test_ngtcp2_vec_merge);
-munit_void_test_decl(test_ngtcp2_vec_len_varint);
+munit_void_test_decl(test_ngtcp2_vec_split)
+munit_void_test_decl(test_ngtcp2_vec_merge)
+munit_void_test_decl(test_ngtcp2_vec_len_varint)
+munit_void_test_decl(test_ngtcp2_vec_copy_at_most)
 
-#endif /* NGTCP2_VEC_TEST_H */
+#endif /* !defined(NGTCP2_VEC_TEST_H) */
